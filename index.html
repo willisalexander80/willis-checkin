@@ -795,19 +795,22 @@
             todayStatusEmoji: null
         };
         
-        // Load saved data
-        function loadData() {
-            const saved = localStorage.getItem('willisData');
-            if (saved) {
-                dashboardData = JSON.parse(saved);
-                updateDashboard();
-            }
-        }
-        
-        // Save data
-        function saveData() {
-            localStorage.setItem('willisData', JSON.stringify(dashboardData));
-        }
+      /*  ────── LOCAL‑STORAGE LEGACY  ──────
+// Load saved data
+function loadData() {
+  const saved = localStorage.getItem('willisData');
+  if (saved) {
+    dashboardData = JSON.parse(saved);
+    updateDashboard();
+  }
+}
+
+// Save data
+function saveData() {
+  localStorage.setItem('willisData', JSON.stringify(dashboardData));
+}
+───────────────────────────────────── */
+
         
         // Update dashboard
         function updateDashboard() {

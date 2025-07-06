@@ -980,37 +980,88 @@
             document.getElementById('checkin-screen').classList.remove('active');
             document.getElementById('dashboard-screen').classList.add('active');
         }
-        
+        /* ── helper: returns an array of selected chip texts inside a follow‑up div ── */
+function grabTags(followupId) {
+  return Array.from(
+    document.querySelectorAll(`#${followupId} .option-chip.selected`)
+  ).map(chip => chip.textContent.trim());
+}
+
         // Submit check-in
-        function submitCheckin() {
-            dashboardData.totalCheckins++;
-            dashboardData.todayCheckins = 1;
-            
-            // Count green days
-            if (dashboardData.todayStatus === 'green') {
-                dashboardData.greenDays++;
-            }
-            
-            saveData();
-            
-            // Reset team status card styling if needed
-            const teamStatusCard = document.getElementById('team-status-card');
-            const teamStatusText = document.getElementById('team-status-text');
-            const teamStatusEmoji = document.getElementById('team-status-emoji');
-            const teamStatusLabel = teamStatusCard.querySelector('.metric-label');
-            if (dashboardData.todayStatus) {
-                teamStatusCard.style.background = '';
-                teamStatusText.style.color = '';
-                teamStatusEmoji.style.color = '';
-                if (teamStatusLabel) teamStatusLabel.style.color = '';
-            }
-            
-            updateDashboard();
-            showDashboard();
-            
-            // Reset form for next time
-            resetForm();
-        }
+        
+async function submitCheckin() {
+  /* 1️⃣ build a row to insert */
+  const payload = {
+    // team status
+    team_status: dashboardData.todayStatus,                // 'green' | 'yellow' | etc.
+    team_tags:   grabTags('team-followup'),
+    team_comment: document.getElementById('team-comments').value,
+
+    // project metrics
+    prod:    projectScores.prod,
+    clarity: projectScores.clarity,
+    resolve: projectScores.resolve,
+    safety:  projectScores.safety,
+
+    // follow‑up tags for each metric
+    prod_tags:    grabTags('prod-followup'),
+    clarity_tags: grabTags('clarity-followup'),
+    resolve_tags: grabTags('resolve-followup'),
+    safety_tags:  grabTags('safety-followup'),
+
+    project_comment: document.getElementById('project-comments').value
+    // created_at column is filled automatically by Supabase (now())
+  };
+
+  /* 2️⃣ write to Supabase   */
+  const { error } = await db.from('checkins').insert(payload);
+  if (error) {
+    alert('Error saving check‑in:\n' + error.message);
+    console.error(error);
+    return;
+  }
+
+  /* 3️⃣ refresh dashboard from DB so counts stay in sync */
+  await refreshDashboard();
+
+  /* 4️⃣ return to dashboard & reset form */
+  showDashboard();
+  resetForm();
+}
+/* ────────────────────────────────────────────────────────────────
+   LOAD ALL ROWS & UPDATE DASHBOARD
+   ────────────────────────────────────────────────────────────── */
+async function refreshDashboard() {
+  const { data, error } = await db.from('checkins').select('*');
+  if (error) { console.error(error); return; }
+
+  // aggregate
+  dashboardData.totalCheckins = data.length;
+  dashboardData.greenDays     = data.filter(r => r.team_status === 'green').length;
+
+  // latest row (if any) = today’s status
+  const last = data.at(-1);
+  if (last) {
+    dashboardData.todayStatus      = last.team_status;
+    dashboardData.todayStatusText  = {
+      green: 'Energized & Connected',
+      yellow: 'Managing OK',
+      orange: 'Some Struggling',
+      red: 'Need Support'
+    }[last.team_status];
+    dashboardData.todayStatusEmoji = { green:'💪', yellow:'👍', orange:'😐', red:'🆘' }[last.team_status];
+
+    projectScores = {
+      prod:    last.prod,
+      clarity: last.clarity,
+      resolve: last.resolve,
+      safety:  last.safety
+    };
+  }
+
+  updateDashboard();   // your existing DOM updater
+}
+
         
         // Reset form
         function resetForm() {
@@ -1020,10 +1071,10 @@
             document.querySelectorAll('textarea').forEach(el => el.value = '');
         }
         
-        // Initialize
-        loadData();
-        updateProgress();
-        updateDashboard(); // Make sure dashboard is updated on load
+       // Initialize
+refreshDashboard();   // ← new async loader
+updateProgress();
+
         
         // Ensure default styling on initial load
         if (!dashboardData.todayStatus) {

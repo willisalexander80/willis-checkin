@@ -522,13 +522,13 @@
         .back-button:hover {
             background: rgba(255,255,255,0.3);
         }
-        /* Center the login card vertically & horizontally */
+       /* Center the login card vertically & horizontally */
 .login-wrapper{
   display:flex;
   flex-direction:column;
-  justify-content:center;   /* vertical centering */
-  align-items:center;        /* horizontal centering */
-  min-height:100vh;          /* full‑screen height */
+  justify-content:center;   /* vertical */
+  align-items:center;        /* horizontal */
+  min-height:100vh;          /* take whole screen */
 }
 
     </style>
@@ -537,7 +537,8 @@
   <!-- LOGIN SCREEN -->
 <div id="login-screen" class="screen active login-wrapper">
 
-  <div class="container" style="padding:40px;text-align:center">
+  <div class="container" style="padding:20px;text-align:center">
+
     <h1>Jobsite Daily Check‑in</h1>
     <p>Sign in with your company e‑mail to continue</p>
     <input id="email-input" type="email"

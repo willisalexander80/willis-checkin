@@ -545,6 +545,14 @@
                     <h1 class="welcome-text">Welcome back, John Smith</h1>
                     <div class="dashboard-subtitle">Jobsite Dashboard</div>
                     <div class="crew-info">Crew: crew-1 | Project: project-1</div>
+  <button id="logout-btn"
+        style="position:absolute;top:20px;right:20px;padding:8px 14px;
+               background:#fff;color:#2c3e50;border:none;border-radius:6px;
+               font-size:14px;cursor:pointer;"
+        onclick="db.auth.signOut()">
+  Log out
+</button>
+
                 </div>
                 
                 <div class="metrics-grid">
@@ -1134,9 +1142,19 @@ async function refreshDashboard() {
             document.querySelectorAll('textarea').forEach(el => el.value = '');
         }
         
-       // Initialize
-refreshDashboard();   // ← new async loader
-updateProgress();
+   // Initialize – attempt silent session restore
+(async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    document.getElementById('login-screen').classList.remove('active');
+    await loadProfile();
+    await refreshDashboard();
+  } else {
+    document.getElementById('login-screen').classList.add('active');
+  }
+  updateProgress();
+})();
+
 
         
         // Ensure default styling on initial load

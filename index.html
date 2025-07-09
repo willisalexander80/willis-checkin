@@ -525,6 +525,18 @@
     </style>
 </head>
 <body>
+  <!-- LOGIN SCREEN -->
+<div id="login-screen" class="screen active">
+  <div class="container" style="padding:40px;text-align:center">
+    <h1>Jobsite Daily Check‑in</h1>
+    <p>Sign in with your company e‑mail to continue</p>
+    <input id="email-input" type="email"
+           placeholder="you@company.com" style="width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #ccc;">
+    <button class="submit-button" style="margin-top:20px"
+            onclick="sendMagicLink()">Send magic link</button>
+  </div>
+</div>
+
     <!-- Dashboard Screen -->
     <div id="dashboard-screen" class="screen active">
         <div class="container">
@@ -768,6 +780,46 @@
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---------- Supabase Auth helpers ---------- */
+async function sendMagicLink() {
+  const email = document.getElementById('email-input').value.trim();
+  if (!email) { alert('Enter an e‑mail'); return; }
+  const { error } = await db.auth.signInWithOtp({ email });
+  if (error) { alert(error.message); return; }
+  alert('Check your e‑mail for the sign‑in link.');
+}
+
+/* React to sign‑in / sign‑out */
+db.auth.onAuthStateChange(async (event, session) => {
+  if (session) {                         // signed in
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('dashboard-screen').classList.add('active');
+    await loadProfile();                 // populate name
+    await refreshDashboard();            // load data
+  } else {                               // signed out
+    document.getElementById('login-screen').classList.add('active');
+    document.getElementById('dashboard-screen').classList.remove('active');
+    document.getElementById('checkin-screen').classList.remove('active');
+  }
+});
+
+/* Pull (or create) profile row */
+async function loadProfile() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return;
+  let { data, error } = await db.from('profiles')
+                               .select('*')
+                               .eq('id', user.id)
+                               .single();
+  if (error && error.code === 'PGRST116') {   // row not found
+    await db.from('profiles').insert({ id: user.id, full_name: user.email });
+    data = { full_name: user.email };
+  }
+  document.querySelector('.welcome-text').textContent =
+      `Welcome back, ${data.full_name}`;
+}
+</script>
 
 <!-- Initialise Supabase client -->
 <script>
@@ -993,28 +1045,36 @@ function grabTags(followupId) {
         // Submit check-in
         
 async function submitCheckin() {
-  /* 1️⃣ build a row to insert */
+  // NEW: make sure we have a signed‑in user
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) {                       // should not happen, but be safe
+    alert('Please sign in first'); 
+    return;
+  }
+
+  /* build a row to insert */
   const payload = {
-    // team status
-    team_status: dashboardData.todayStatus,                // 'green' | 'yellow' | etc.
+    user_id: user.id,                // NEW line
+    team_status: dashboardData.todayStatus,
     team_tags:   grabTags('team-followup'),
     team_comment: document.getElementById('team-comments').value,
 
     // project metrics
-    prod:    projectScores.prod,
+    prod:   projectScores.prod,
     clarity: projectScores.clarity,
     resolve: projectScores.resolve,
     safety:  projectScores.safety,
 
-    // follow‑up tags for each metric
+    // follow‑up tags
     prod_tags:    grabTags('prod-followup'),
     clarity_tags: grabTags('clarity-followup'),
     resolve_tags: grabTags('resolve-followup'),
     safety_tags:  grabTags('safety-followup'),
 
     project_comment: document.getElementById('project-comments').value
-    // created_at column is filled automatically by Supabase (now())
+    // created_at is auto‑filled by Supabase
   };
+
 
   /* 2️⃣ write to Supabase   */
   const { error } = await db.from('checkins').insert(payload);

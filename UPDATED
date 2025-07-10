@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport"
+      content="width=device-width,initial-scale=1" />
+
+<title>Jobsite Daily Check‑in</title>
+
+<!-- 1️⃣ Supabase sdk -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="supabase.js"></script>
+
+<!-- 2️⃣ ONE style block – everything lives here so you can delete all other <style> tags you had -->
+<style>
+:root{
+  --blue:#178ce8;--green:#0f9d58;--yellow:#f4b400;--orange:#db4437;
+  --red:#c5221f;--card:#f5f7fa;--text:#243040;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+body{margin:0;background:#edeff3;display:flex;justify-content:center}
+.container{max-width:520px;width:100%;margin:auto;padding:20px}
+h1,h2,h3,p{margin:0 0 .8em 0;text-align:center;color:var(--text)}
+/* screen‑switcher *****************************************************/
+.screen{display:none}
+.screen.active{display:block}
+/* login page **********************************************************/
+.scale-strip{display:flex;justify-content:center;gap:14px;margin:34px 0}
+.bar{display:inline-block;width:60px;height:14px;border-radius:6px}
+.bar.red{background:var(--red)}.bar.orange{background:var(--orange)}
+.bar.yellow{background:var(--yellow)}.bar.green{background:var(--green)}
+input,button{width:100%;font-size:18px;padding:14px;border-radius:8px;border:1px solid #bbb}
+button{border:none;background:var(--blue);color:#fff;font-weight:600;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+/* dashboard header ****************************************************/
+.welcome{background:#243040;color:#fff;padding:22px;border-radius:0 0 12px 12px;text-align:left}
+.welcome h2{margin:0;font-size:24px}
+.welcome small{opacity:.8}
+/* metric cards (green/yellow/orange/red + number) *********************/
+.metric-card{background:var(--card);border-radius:16px;padding:22px;margin:18px 0}
+.metric-card h3{font-size:18px;text-align:left;margin-bottom:14px}
+.option-chip{display:inline-block;padding:10px 18px;margin:6px;border-radius:22px;border:2px solid #ddd;cursor:pointer}
+.option-chip.selected{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* bottom submit bar ***************************************************/
+.sticky-bottom{position:sticky;bottom:0;left:0;background:#fff;padding:18px 0}
+</style>
+</head>
+<body>
+
+<!-- ░░ LOGIN  ░░ -->
+<div id="login-screen" class="screen active">
+  <div class="container">
+    <div class="scale-strip">
+      <span class="bar red"></span><span class="bar orange"></span>
+      <span class="bar yellow"></span><span class="bar green"></span>
+    </div>
+
+    <h1>Jobsite Daily Check‑in</h1>
+    <p>Sign in with your company&nbsp;e‑mail to continue</p>
+
+    <input id="email-input" type="email"
+           placeholder="you@company.com" autocomplete="email" />
+    <button id="magic-btn">Send magic link</button>
+  </div>
+</div>
+
+<!-- ░░ DASHBOARD  ░░ -->
+<div id="dashboard-screen" class="screen">
+  <div class="welcome">
+     <h2 id="welcome-text">Welcome back</h2>
+     <small id="crew-info">Crew: — | Project: —</small>
+     <button id="logout-btn" style="float:right;margin-top:-40px;background:#fff;color:#243040;padding:6px 14px;font-size:14px">Log out</button>
+  </div>
+
+  <div class="container">
+
+    <!-- Team status *************** -->
+    <section class="metric-card" id="team-card">
+      <h3>How's your crew today?</h3>
+      <div id="team-options">
+        <span class="option-chip" data-val="green">💪 Energized &amp; Connected</span>
+        <span class="option-chip" data-val="yellow">👍 Managing OK</span>
+        <span class="option-chip" data-val="orange">😐 Some Struggling</span>
+        <span class="option-chip" data-val="red">🆘 Need Support</span>
+      </div>
+      <textarea id="team-comments" rows="3"
+        placeholder="Any observations about your team today..." style="width:100%;margin-top:14px;border-radius:10px"></textarea>
+    </section>
+
+    <!-- Project status ************ -->
+    <section class="metric-card" id="project-card">
+      <h3>How did your crew's **productivity** compare to expectations?</h3>
+      <div id="prod-scale">
+        <!-- rating 1‑5 chips rendered by JS -->
+      </div>
+
+      <!-- helper tags -->
+      <fieldset id="prod-tags-field" style="border:2px solid #178ce8;border-radius:12px;padding:14px;margin-top:12px">
+        <legend>What helped your team exceed expectations today?</legend>
+        <div id="prod-tags" class="chips-row"></div>
+      </fieldset>
+
+      <!-- 3 more identical blocks for clarity / resolve / safety … -->
+      <!-- … -->
+    </section>
+
+    <!-- extra comments -->
+    <textarea id="project-comments" rows="3"
+      placeholder="Any other observations about today's work..."
+      style="width:100%;margin-top:16px;border-radius:10px"></textarea>
+
+    <!-- sticky bottom bar -->
+    <div class="sticky-bottom">
+      <button id="submit-btn">Submit Daily Check‑in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ░░ APP LOGIC  ░░ -->
+<script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import {SUPABASE_URL,SUPABASE_KEY} from './supabase.js'
+
+/* ----------  Supabase client  ---------- */
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+/* ----------  Screen helpers  ---------- */
+const loginScreen      = document.getElementById('login-screen')
+const dashboardScreen  = document.getElementById('dashboard-screen')
+function showLogin(){ loginScreen.classList.add('active'); dashboardScreen.classList.remove('active')}
+function showDash (){ loginScreen.classList.remove('active'); dashboardScreen.classList.add('active')}
+
+/* ----------  Auth flow  ---------- */
+document.getElementById('magic-btn').onclick = async () =>{
+  const email = document.getElementById('email-input').value.trim()
+  if(!email){alert('Enter a valid email');return}
+  const { error } = await db.auth.signInWithOtp({email})
+  if(error) alert(error.message); else alert('Check your inbox!')
+}
+
+db.auth.onAuthStateChange(async (_evt, session) =>{
+  if(session?.user){      // logged‑in
+     await loadProfile()  // pull crew / project, etc.
+     showDash()
+  }else{
+     showLogin()
+  }
+})
+
+/* ----------  Profile (crew / project / name) ---------- */
+async function loadProfile(){
+   const { data:{user} } = await db.auth.getUser()
+   if(!user) return
+
+   let { data, error } = await db.from('profiles')
+                                 .select('*').eq('id',user.id).single()
+   if(error && error.code==='PGRST116'){ // none yet
+      await db.from('profiles').insert({id:user.id,full_name:user.email})
+      data = {full_name:user.email}
+   }
+   // prompt for missing full name only the first time
+   if(!data.full_name || data.full_name===data.email){
+       const fullName = prompt('Your name (e.g. John Smith)')
+       if(fullName) {
+         await db.from('profiles')
+                 .update({full_name:fullName})
+                 .eq('id',user.id)
+         data.full_name = fullName
+       }
+   }
+   document.getElementById('welcome-text').textContent =
+        `Welcome back, ${data.full_name}`
+   document.getElementById('crew-info').textContent =
+        `Crew: ${data.crew||'—'} | Project: ${data.project||'—'}`
+}
+
+/* ----------  Metric widgets ---------- */
+// rating scales 1‑5
+['prod','clarity','resolve','safety'].forEach(metric=>{
+   const row = document.createElement('div')
+   ;[1,2,3,4,5].forEach(n=>{
+     const span=document.createElement('span')
+     span.className='option-chip'; span.textContent=n
+     span.onclick=e=>{ row.querySelectorAll('.selected').forEach(s=>s.classList.remove('selected')); span.classList.add('selected')}
+     row.append(span)
+   })
+   document.getElementById(metric==='prod'?'prod-scale':metric+'-scale')?.append(row)
+})
+// helper function to grab selected chips
+const grab = sel=>[...document.querySelectorAll(sel+'.selected')].map(e=>e.dataset.val||e.textContent.trim())
+
+/* ----------  Submit daily check‑in ---------- */
+document.getElementById('submit-btn').onclick = async ()=>{
+  const { data:{user} } = await db.auth.getUser()
+  if(!user){alert('Login first');return}
+
+  const payload = {
+    user_id : user.id,
+    // team
+    team_status : grab('#team-options .option-chip')[0]||null,
+    team_tags   : grab('#team-tags .option-chip'),
+    team_comment: document.getElementById('team-comments').value.trim()||null,
+    // project ratings
+    prod   : +grab('#prod-scale .option-chip')[0]||null,
+    clarity: +grab('#clarity-scale .option-chip')[0]||null,
+    resolve: +grab('#resolve-scale .option-chip')[0]||null,
+    safety : +grab('#safety-scale .option-chip')[0]||null,
+    // project helper tags
+    prod_tags   : grab('#prod-tags .option-chip'),
+    clarity_tags: grab('#clarity-tags .option-chip'),
+    resolve_tags: grab('#resolve-tags .option-chip'),
+    safety_tags : grab('#safety-tags .option-chip'),
+    // ⬇ NEW fields requested
+    address_tags: grab('#resolve-tags .option-chip'),          // <‑‑ adjust selector
+    project_score: calcProjectScore(),
+    project_comment: document.getElementById('project-comments').value.trim()||null
+  }
+  const { error } = await db.from('checkins').insert(payload)
+  if(error){ alert(error.message); console.error(error) }
+  else { alert('Saved ✓'); location.reload() }
+}
+function calcProjectScore(){
+   const vals=['prod','clarity','resolve','safety'].map(m=>+grab('#'+m+'-scale .option-chip')[0]||3)
+   return (vals.reduce((a,b)=>a+b,0)/4).toFixed(1)
+}
+
+/* ----------  Sign‑out ---------- */
+document.getElementById('logout-btn').onclick = async () =>{
+   await db.auth.signOut(); showLogin()
+}
+</script>
+</body>
+</html>

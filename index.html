@@ -140,41 +140,91 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 <!-- ░░ SCRIPTS ░░ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  // ─── Supabase client init ─────────────────────────────────────
   const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';  // ← replace with your anon key
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  /* handle magic‑link hash on the redirect page */
+  // ─── Handle magic-link redirect ───────────────────────────────
   (async () => {
     if (location.hash.includes('access_token')) {
       const { error } = await db.auth.getSessionFromUrl({ storeSession: true });
-      if (error) alert('Login failed: ' + error.message);
+      if (error) console.error('Failed to parse magic link:', error.message);
+      // Remove the hash so we don't try again on reload:
+      history.replaceState({}, document.title, '/');
     }
   })();
 
-  /* ------------- keep the rest of your JS exactly as is -------------- */
+  // ─── Screen toggle on auth change ─────────────────────────────
+  db.auth.onAuthStateChange(async (_event, session) => {
+    const loggedIn = !!session?.user;
+    document.getElementById('login-screen')    .classList.toggle('active', !loggedIn);
+    document.getElementById('dashboard-screen').classList.toggle('active',  loggedIn);
+
+    if (loggedIn) {
+      await loadProfile();
+      await refreshDashboard();    // you already have this
+    }
+  });
+
+  // ─── Send magic link ──────────────────────────────────────────
+  async function sendMagicLink() {
+    const email = document.getElementById('email-input').value.trim();
+    if (!email) { alert('Please enter your work e-mail'); return; }
+    const { error } = await db.auth.signInWithOtp({ email });
+    if (error) { alert(error.message); return; }
+    alert('✅ Check your inbox for the magic link.');
+  }
+
+  // ─── Load (or create) profile row ─────────────────────────────
+  async function loadProfile() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    let { data, error } = await db
+      .from('profiles')
+      .select('full_name, crew, project')
+      .eq('id', user.id)
+      .single();
+
+    // If no profile exists yet, insert a stub:
+    if (error && error.code === 'PGRST116') {
+      await db.from('profiles').insert({
+        id: user.id,
+        full_name: user.email,
+        crew: null,
+        project: null
+      });
+      data = { full_name: user.email, crew: null, project: null };
+    }
+
+    // Prompt for a friendly name if they haven’t set one:
+    if (!data.full_name || data.full_name === user.email) {
+      const name = prompt('What’s your name? (e.g. John Smith)');
+      if (name) {
+        await db
+          .from('profiles')
+          .update({ full_name: name })
+          .eq('id', user.id);
+        data.full_name = name;
+      }
+    }
+
+    // Finally, inject into the DOM:
+    document.querySelector('.welcome-text').textContent =
+      `Welcome back, ${data.full_name}`;
+
+    document.getElementById('crew-info').textContent =
+      `Crew: ${data.crew ?? '—'} | Project: ${data.project ?? '—'}`;
+  }
+
+  // ─── Log out helper ────────────────────────────────────────────
+  async function logout() {
+    await db.auth.signOut();
+    // toggled by onAuthStateChange
+  }
 </script>
 
-
-/* Send OTP link */
-async function sendMagicLink(){
-  const email=document.getElementById('email-input').value.trim();
-  if(!email){alert('Enter an e‑mail');return;}
-  const {error}=await db.auth.signInWithOtp({email});
-  if(error){alert(error.message);return;}
-  alert('Check your e‑mail for the link');
-}
-
-/* Log‑out helper */
-async function logout(){await db.auth.signOut();}
-
-/* Toggle screens on auth change */
-db.auth.onAuthStateChange(async(_evt,session)=>{
-  const logged=!!session?.user;
-  document.getElementById('login-screen').classList.toggle('active',!logged);
-  document.getElementById('dashboard-screen').classList.toggle('active',logged);
-  if(logged){await loadProfile();await refreshDashboard();}
-});
 
 /* Load (or create) profile */
 async function loadProfile(){

@@ -667,7 +667,10 @@
                 <div class="dashboard-header">
                     <h1 class="welcome-text">Welcome back, John Smith</h1>
                     <div class="dashboard-subtitle">Jobsite Dashboard</div>
-                    <div class="crew-info">Crew: crew-1 | Project: project-1</div>
+                    <div id="crew-info" class="crew-info">
+    Crew: — | Project: —
+</div>
+
   <button id="logout-btn"
         style="position:absolute;top:20px;right:20px;padding:8px 14px;
                background:#fff;color:#2c3e50;border:none;border-radius:6px;
@@ -966,11 +969,15 @@ if (!data.full_name || data.full_name === user.email) {
 /* END NEW ▲——————————————————————————————————————————— */
 
 document.querySelector('.welcome-text').textContent =
-    `Welcome back, ${data.full_name}`;
+    `Welcome back, ${data.full_name}`;
 
-  document.querySelector('.welcome-text').textContent =
-      `Welcome back, ${data.full_name}`;
-}
+// ▼ add this line
+document.getElementById('crew-info').textContent =
+    `Crew: ${data.crew ?? '—'} | Project: ${data.project ?? '—'}`;
+// ▲ added line
+
+}   // ← this is the existing closing brace of loadProfile()
+
 </script>
 
 <!-- Initialise Supabase client -->

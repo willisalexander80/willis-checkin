@@ -138,24 +138,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 </div>
 
 <!-- ░░ SCRIPTS ░░ -->
+<!-- Initialise Supabase client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ─── Supabase client init ─────────────────────────────────────
   const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';  // ← replace with your anon key
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';  // ← swap yours in here
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ─── Handle magic-link redirect ───────────────────────────────
-  (async () => {
+  // 1️⃣ If we arrived via magic-link, parse & store the session
+  ;(async () => {
     if (location.hash.includes('access_token')) {
       const { error } = await db.auth.getSessionFromUrl({ storeSession: true });
-      if (error) console.error('Failed to parse magic link:', error.message);
-      // Remove the hash so we don't try again on reload:
-      history.replaceState({}, document.title, '/');
+      // hide the trailing hash from the URL
+      history.replaceState({}, document.title, window.location.pathname);
+      if (error) console.error('Magic link error:', error.message);
     }
   })();
+</script>
 
-  // ─── Screen toggle on auth change ─────────────────────────────
+<script>
+  // ─── Toggle between login / dashboard on auth change ──────────
   db.auth.onAuthStateChange(async (_event, session) => {
     const loggedIn = !!session?.user;
     document.getElementById('login-screen')    .classList.toggle('active', !loggedIn);
@@ -163,42 +165,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 
     if (loggedIn) {
       await loadProfile();
-      await refreshDashboard();    // you already have this
+      await refreshDashboard();   // if you have this already
     }
   });
 
-  // ─── Send magic link ──────────────────────────────────────────
-  async function sendMagicLink() {
-    const email = document.getElementById('email-input').value.trim();
-    if (!email) { alert('Please enter your work e-mail'); return; }
-    const { error } = await db.auth.signInWithOtp({ email });
-    if (error) { alert(error.message); return; }
-    alert('✅ Check your inbox for the magic link.');
-  }
-
-  // ─── Load (or create) profile row ─────────────────────────────
+  // ─── Load (or create) profile row, then inject into the DOM ───
   async function loadProfile() {
     const { data: { user } } = await db.auth.getUser();
     if (!user) return;
 
+    // fetch only the fields we need
     let { data, error } = await db
       .from('profiles')
       .select('full_name, crew, project')
       .eq('id', user.id)
       .single();
 
-    // If no profile exists yet, insert a stub:
+    // if the row doesn't exist, create a stub
     if (error && error.code === 'PGRST116') {
       await db.from('profiles').insert({
         id: user.id,
         full_name: user.email,
-        crew: null,
-        project: null
+        crew:      null,
+        project:   null
       });
       data = { full_name: user.email, crew: null, project: null };
     }
 
-    // Prompt for a friendly name if they haven’t set one:
+    // if they never set a friendly name, prompt once
     if (!data.full_name || data.full_name === user.email) {
       const name = prompt('What’s your name? (e.g. John Smith)');
       if (name) {
@@ -210,20 +204,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
       }
     }
 
-    // Finally, inject into the DOM:
+    // update the header
     document.querySelector('.welcome-text').textContent =
       `Welcome back, ${data.full_name}`;
 
     document.getElementById('crew-info').textContent =
-      `Crew: ${data.crew ?? '—'} | Project: ${data.project ?? '—'}`;
+      `Crew: ${data.crew    ?? '—'}   |   Project: ${data.project ?? '—'}`;
   }
 
   // ─── Log out helper ────────────────────────────────────────────
   async function logout() {
     await db.auth.signOut();
-    // toggled by onAuthStateChange
+    // onAuthStateChange will flip you back to the login screen
   }
 </script>
+
 
 
 /* Load (or create) profile */

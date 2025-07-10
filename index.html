@@ -1,1364 +1,233 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
- 
+<meta charset="utf-8" />
+<meta name="viewport"
+      content="width=device-width,initial-scale=1" />
 
-  <!-- screen‑switcher rules -->
-  <style>
-    .screen        { display: none; }  /* hidden by default */
-    .screen.active { display: block; } /* visible when .active is present */
-  </style>
+<title>Jobsite Daily Check‑in</title>
 
-  
+<!-- 1️⃣ Supabase sdk -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="supabase.js"></script>
+
+<!-- 2️⃣ ONE style block – everything lives here so you can delete all other <style> tags you had -->
+<style>
+:root{
+  --blue:#178ce8;--green:#0f9d58;--yellow:#f4b400;--orange:#db4437;
+  --red:#c5221f;--card:#f5f7fa;--text:#243040;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+body{margin:0;background:#edeff3;display:flex;justify-content:center}
+.container{max-width:520px;width:100%;margin:auto;padding:20px}
+h1,h2,h3,p{margin:0 0 .8em 0;text-align:center;color:var(--text)}
+/* screen‑switcher *****************************************************/
+.screen{display:none}
+.screen.active{display:block}
+/* login page **********************************************************/
+.scale-strip{display:flex;justify-content:center;gap:14px;margin:34px 0}
+.bar{display:inline-block;width:60px;height:14px;border-radius:6px}
+.bar.red{background:var(--red)}.bar.orange{background:var(--orange)}
+.bar.yellow{background:var(--yellow)}.bar.green{background:var(--green)}
+input,button{width:100%;font-size:18px;padding:14px;border-radius:8px;border:1px solid #bbb}
+button{border:none;background:var(--blue);color:#fff;font-weight:600;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+/* dashboard header ****************************************************/
+.welcome{background:#243040;color:#fff;padding:22px;border-radius:0 0 12px 12px;text-align:left}
+.welcome h2{margin:0;font-size:24px}
+.welcome small{opacity:.8}
+/* metric cards (green/yellow/orange/red + number) *********************/
+.metric-card{background:var(--card);border-radius:16px;padding:22px;margin:18px 0}
+.metric-card h3{font-size:18px;text-align:left;margin-bottom:14px}
+.option-chip{display:inline-block;padding:10px 18px;margin:6px;border-radius:22px;border:2px solid #ddd;cursor:pointer}
+.option-chip.selected{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* bottom submit bar ***************************************************/
+.sticky-bottom{position:sticky;bottom:0;left:0;background:#fff;padding:18px 0}
+</style>
 </head>
-
-    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WILLIS Daily Check-in</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #f5f6fa;
-            color: #2c3e50;
-            padding: 0;
-            margin: 0;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        
-        /* Dashboard Styles */
-        .dashboard-container {
-            background: #f5f6fa;
-            min-height: 100vh;
-        }
-        
-        .dashboard-header {
-            background: #2c3e50;
-            color: white;
-            padding: 30px 20px;
-            margin-bottom: 30px;
-        }
-        
-        .welcome-text {
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .dashboard-subtitle {
-            font-size: 18px;
-            opacity: 0.9;
-            margin-bottom: 5px;
-        }
-        
-        .crew-info {
-            font-size: 16px;
-            opacity: 0.8;
-        }
-        
-        .metrics-section {
-            padding: 0 20px 100px 20px;
-        }
-        
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 0 20px;
-
-        }
-        
-        .metric-card {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .metric-card .metric-number {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #2c3e50;
-        }
-        
-        .metric-card .metric-label {
-            font-size: 16px;
-            color: #7f8c8d;
-            font-weight: 500;
-        }
-        
-        /* Override colors for status and performance cards */
-        .team-status-card .metric-number,
-        .team-status-card .metric-label,
-        .performance-card .metric-number,
-        .performance-card .metric-label {
-            color: white;
-        }
-        
-        /* Team Status Card Colors */
-        .team-status-card.status-green {
-            background: #27ae60 !important;
-        }
-        
-        .team-status-card.status-yellow {
-            background: #f1c40f !important;
-        }
-        
-        .team-status-card.status-orange {
-            background: #e67e22 !important;
-        }
-        
-        .team-status-card.status-red {
-            background: #e74c3c !important;
-        }
-        
-        .team-status-text {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: white;
-        }
-        
-        .team-status-emoji {
-            font-size: 36px;
-            margin-bottom: 8px;
-        }
-        
-        /* Performance Score Card Colors */
-        .performance-card.score-1 {
-            background: #e74c3c !important;
-        }
-        
-        .performance-card.score-2 {
-            background: #e67e22 !important;
-        }
-        
-        .performance-card.score-3 {
-            background: #f1c40f !important;
-        }
-        
-        .performance-card.score-4 {
-            background: #27ae60 !important;
-        }
-        
-        .performance-card.score-5 {
-            background: #3498db !important;
-        }
-        
-        .check-in-button {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-            max-width: 460px;
-            padding: 16px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        
-        .check-in-button:active {
-            transform: translateX(-50%) scale(0.98);
-            background: #2980b9;
-        }
-        
-        /* Form Styles */
-        .header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .header p {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-        
-        .form-section {
-            padding: 20px;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e9ecef;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .performance-score-display {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 20px;
-            font-weight: 700;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        
-        /* Performance Score Display Colors */
-        .performance-score-display.score-1 {
-            background: #e74c3c;
-        }
-        
-        .performance-score-display.score-2 {
-            background: #e67e22;
-        }
-        
-        .performance-score-display.score-3 {
-            background: #f1c40f;
-        }
-        
-        .performance-score-display.score-4 {
-            background: #27ae60;
-        }
-        
-        .performance-score-display.score-5 {
-            background: #3498db;
-        }
-        
-        .metric-group {
-            margin-bottom: 30px;
-        }
-        
-        .metric-label {
-            font-size: 16px;
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 12px;
-            display: block;
-        }
-        
-        .button-scale {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 5px;
-        }
-        
-        .scale-labels {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-bottom: 15px;
-            font-size: 11px;
-            color: #999;
-            text-align: center;
-        }
-        
-        .scale-label {
-            line-height: 1.2;
-        }
-        
-        .scale-button {
-            height: 60px;
-            border: 2px solid transparent;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-        
-        .scale-button:active {
-            transform: scale(0.95);
-        }
-        
-        .scale-button.selected {
-            border-color: #2c3e50;
-            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
-        }
-        
-        .scale-button.selected::after {
-            content: '✓';
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            font-size: 16px;
-        }
-        
-        /* Color scheme for productivity/performance metrics */
-        .scale-1 { background: #e74c3c; }
-        .scale-2 { background: #e67e22; }
-        .scale-3 { background: #f1c40f; }
-        .scale-4 { background: #27ae60; }
-        .scale-5 { background: #3498db; }
-        
-        /* Team status colors */
-        .status-green { background: #27ae60; }
-        .status-yellow { background: #f1c40f; }
-        .status-orange { background: #e67e22; }
-        .status-red { background: #e74c3c; }
-        
-        .status-button {
-            height: 80px;
-            border: 3px solid transparent;
-            border-radius: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-        
-        .status-button .emoji {
-            font-size: 28px;
-        }
-        
-        .status-button:active {
-            transform: scale(0.95);
-        }
-        
-        .status-button.selected {
-            border-color: #2c3e50;
-            box-shadow: 0 0 0 4px rgba(44, 62, 80, 0.2);
-        }
-        
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        /* Follow-up questions */
-        .follow-up {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 12px;
-            border-left: 4px solid #3498db;
-            display: none;
-            animation: slideIn 0.3s ease;
-        }
-        
-        .follow-up.show {
-            display: block;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .follow-up-label {
-            font-size: 14px;
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .follow-up-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
-        .option-chip {
-            background: white;
-            border: 2px solid #dee2e6;
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .option-chip:active {
-            transform: scale(0.95);
-        }
-        
-        .option-chip.selected {
-            background: #3498db;
-            color: white;
-            border-color: #3498db;
-        }
-        
-        .comments-section {
-            margin-top: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .comments-label {
-            font-size: 16px;
-            font-weight: 500;
-            color: #495057;
-            margin-bottom: 10px;
-            display: block;
-        }
-        
-        .comments-box {
-            width: 100%;
-            min-height: 80px;
-            padding: 12px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 16px;
-            resize: vertical;
-            font-family: inherit;
-        }
-        
-        .comments-box:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        
-        .submit-section {
-            padding: 20px;
-            background: #f8f9fa;
-            position: sticky;
-            bottom: 0;
-            border-top: 1px solid #dee2e6;
-        }
-        
-        .submit-button {
-            width: 100%;
-            padding: 16px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .submit-button:active {
-            transform: scale(0.98);
-            background: #2980b9;
-        }
-        
-        .progress-bar {
-            height: 4px;
-            background: #e9ecef;
-            margin-bottom: 20px;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: #3498db;
-            transition: width 0.3s ease;
-        }
-        
-        /* Screen transitions */
-        .screen {
-            display: none;
-        }
-        
-        .screen.active {
-            display: block;
-        }
-        
-        .back-button {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .back-button:hover {
-            background: rgba(255,255,255,0.3);
-        }
-     /* ── Login card ────────────────────────────────────────────── */
-#login-screen .card{
-  max-width:460px;
-  width:90%;
-  margin:0 auto;
-  display:flex;
-  flex-direction:column;
-  gap:12px;                           /* ← smaller gap          */
-}
-
-/* make both controls equally tall & rounded */
-#login-screen .card input,
-#login-screen .card button{
-  height:56px;                        /* same height, same look */
-  width:100%;
-  border-radius:12px;                 /* same rounded corners   */
-  font-size:18px;
-  box-sizing:border-box;
-}
-/* email box specific tweaks */
-#login-screen .card input{
-  padding:0 16px;
-}
-
-/* blue “Send magic link” button */
-#login-screen .card button{
-  background:#1c90e4;                 /* same blue as your other btn */
-  color:#fff;
-  border:none;
-  cursor:pointer;
-  font-weight:600;
-  transition:filter .15s;
-}
-#login-screen .card button:active{
-  filter:brightness(.9);
-}
-
-/* ── Four‑colour scale above the heading ───────────────────── */
-.scale-strip{
-  display:flex;
-  justify-content:center;
-  gap:8px;
-  margin:0 auto 32px;                 /* bottom gap before <h1> */
-}
-.scale-strip .bar{
-  width:44px; height:12px; border-radius:4px;
-}
-.bar.red    { background:#e74c3c; }
-.bar.orange { background:#e67e22; }
-.bar.yellow { background:#f1c40f; }
-.bar.green  { background:#27ae60; }
-
-.logout-link{
-  position:absolute;
-  top:1rem;
-  right:1rem;
-  font-size:0.9rem;
-  font-weight:500;
-  text-decoration:none;
-  color:#2c3e50;
-}
-<a href="#" id="logout-btn" class="logout-link" onclick="logout()">Log&nbsp;out</a>
-/* ───── Stack & stretch login input + button ───── */
-#login-screen .card input[type="email"],
-#login-screen .card button{
-  display:block;        /* pushes button onto its own line   */
-  width:100%;           /* fills whole card                   */
-  box-sizing:border-box;/* keeps padding inside the 100 %     */
-}
-
-#login-screen .card button{          /* tiny spacing tweak   */
-  margin-top:1rem;       /* 16 px gap under the text box      */
-}
-
-/* ─── Login card layout tweak ─── */
-#login-screen .card{
-  max-width:460px;   /* same as the bottom bar      */
-  width:90%;         /* small‑screen fallback       */
-  margin:0 auto;     /* centres left‑right          */
-}
-/* ─── Login card (stack children) ─── */
-#login-screen .card{
-  max-width:460px;               /* ← from last step                  */
-  width:90%;
-  margin:0 auto;
-
-  /* NEW ↓ – make children stack top‑to‑bottom */
-  display:flex;
-  flex-direction:column;
-  gap:24px;                      /* space between input & button      */
-}
-
-#login-screen .card input,
-#login-screen .card button{
-  width:100%;                    /* stretch to the card’s width       */
-  box-sizing:border-box;         /* keep paddings inside the 100 %    */
-}
-/* FINAL centring pass for the login page -------------------------------- */
-#login-screen .container{
-  /* put the whole strip in the middle of the page */
-  min-height:100vh;            /* full viewport height                  */
-  display:flex;
-  flex-direction:column;
-  justify-content:center;      /* ⬆  vertically centre                  */
-  align-items:center;          /* ⬅  centre everything horizontally     */
-  gap:24px;                    /* breathing room between strip / title  */
-  padding:0 20px;              /* keep side gutters on phones           */
-  text-align:center;           /* <h1> & <p> perfectly centred          */
-}
-
-
-
-    </style>
-</head>
-
 <body>
- <!-- LOGIN SCREEN -->
+
+<!-- ░░ LOGIN  ░░ -->
 <div id="login-screen" class="screen active">
   <div class="container">
-
-    <!-- ★ new colourful scale bar -->
     <div class="scale-strip">
-      <span class="bar red"></span>
-      <span class="bar orange"></span>
-      <span class="bar yellow"></span>
-      <span class="bar green"></span>
+      <span class="bar red"></span><span class="bar orange"></span>
+      <span class="bar yellow"></span><span class="bar green"></span>
     </div>
 
-    <h1>Jobsite Daily Check‑in</h1>
-    <p>Sign in with your company e‑mail to continue</p>
+    <h1>Jobsite Daily Check‑in</h1>
+    <p>Sign in with your company&nbsp;e‑mail to continue</p>
 
-    <div class="card">
-      <input id="email-input" type="email" placeholder="you@company.com">
-      <button onclick="sendMagicLink()">Send magic link</button>
-    </div>
-
+    <input id="email-input" type="email"
+           placeholder="you@company.com" autocomplete="email" />
+    <button id="magic-btn">Send magic link</button>
   </div>
 </div>
 
+<!-- ░░ DASHBOARD  ░░ -->
+<div id="dashboard-screen" class="screen">
+  <div class="welcome">
+     <h2 id="welcome-text">Welcome back</h2>
+     <small id="crew-info">Crew: — | Project: —</small>
+     <button id="logout-btn" style="float:right;margin-top:-40px;background:#fff;color:#243040;padding:6px 14px;font-size:14px">Log out</button>
+  </div>
 
+  <div class="container">
 
-    <!-- Dashboard Screen -->
-    <div id="dashboard-screen" class="screen">
-        <div class="container">
-            <div class="dashboard-container">
-                <div class="dashboard-header">
-                    <h1 class="welcome-text">Welcome back, John Smith</h1>
-                    <div class="dashboard-subtitle">Jobsite Dashboard</div>
-                    <div id="crew-info" class="crew-info">
-    Crew: — | Project: —
+    <!-- Team status *************** -->
+    <section class="metric-card" id="team-card">
+      <h3>How's your crew today?</h3>
+      <div id="team-options">
+        <span class="option-chip" data-val="green">💪 Energized &amp; Connected</span>
+        <span class="option-chip" data-val="yellow">👍 Managing OK</span>
+        <span class="option-chip" data-val="orange">😐 Some Struggling</span>
+        <span class="option-chip" data-val="red">🆘 Need Support</span>
+      </div>
+      <textarea id="team-comments" rows="3"
+        placeholder="Any observations about your team today..." style="width:100%;margin-top:14px;border-radius:10px"></textarea>
+    </section>
+
+    <!-- Project status ************ -->
+    <section class="metric-card" id="project-card">
+      <h3>How did your crew's **productivity** compare to expectations?</h3>
+      <div id="prod-scale">
+        <!-- rating 1‑5 chips rendered by JS -->
+      </div>
+
+      <!-- helper tags -->
+      <fieldset id="prod-tags-field" style="border:2px solid #178ce8;border-radius:12px;padding:14px;margin-top:12px">
+        <legend>What helped your team exceed expectations today?</legend>
+        <div id="prod-tags" class="chips-row"></div>
+      </fieldset>
+
+      <!-- 3 more identical blocks for clarity / resolve / safety … -->
+      <!-- … -->
+    </section>
+
+    <!-- extra comments -->
+    <textarea id="project-comments" rows="3"
+      placeholder="Any other observations about today's work..."
+      style="width:100%;margin-top:16px;border-radius:10px"></textarea>
+
+    <!-- sticky bottom bar -->
+    <div class="sticky-bottom">
+      <button id="submit-btn">Submit Daily Check‑in</button>
+    </div>
+  </div>
 </div>
 
-  <button id="logout-btn"
-        style="position:absolute;top:20px;right:20px;padding:8px 14px;
-               background:#fff;color:#2c3e50;border:none;border-radius:6px;
-               font-size:14px;cursor:pointer;"
-        onclick="db.auth.signOut()">
-  Log out
-</button>
+<!-- ░░ APP LOGIC  ░░ -->
+<script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+import {SUPABASE_URL,SUPABASE_KEY} from './supabase.js'
 
-                </div>
-                
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-number" id="total-checkins">0</div>
-                        <div class="metric-label">Total Check-ins</div>
-                    </div>
-                    
-                    <div class="metric-card team-status-card" id="team-status-card">
-                        <div class="team-status-emoji" id="team-status-emoji">—</div>
-                        <div class="team-status-text" id="team-status-text">No Check-in</div>
-                        <div class="metric-label">Today's Team Status</div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <div class="metric-number" id="green-days">0</div>
-                        <div class="metric-label">Team Green Days</div>
-                    </div>
-                    
-                    <div class="metric-card performance-card" id="performance-card">
-                        <div class="metric-number" id="performance-score">3.0</div>
-                        <div class="metric-label">Project Performance Score</div>
-                    </div>
-                </div>
-                
-                <button class="check-in-button" onclick="showCheckinForm()">Start Daily Check-in</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Check-in Form Screen -->
-    <div id="checkin-screen" class="screen">
-        <div class="container">
-            <div class="header">
-                <button class="back-button" onclick="showDashboard()">←</button>
-                <h1>WILLIS Daily Check-in</h1>
-                <p>2.5-minute leadership effectiveness tracker</p>
-            </div>
-            
-            <div class="form-section">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 0%;"></div>
-                </div>
-                
-                <h2 class="section-title">👥 Team Status</h2>
-                
-                <!-- Team Wellbeing -->
-                <div class="metric-group">
-                    <label class="metric-label">How's your crew today?</label>
-                    <div class="status-grid">
-                        <button class="status-button status-green" onclick="selectStatus(this, 'green')">
-                            <span class="emoji">💪</span>
-                            <span>Energized & Connected</span>
-                        </button>
-                        <button class="status-button status-yellow" onclick="selectStatus(this, 'yellow')">
-                            <span class="emoji">👍</span>
-                            <span>Managing OK</span>
-                        </button>
-                        <button class="status-button status-orange" onclick="selectStatus(this, 'orange')">
-                            <span class="emoji">😐</span>
-                            <span>Some Struggling</span>
-                        </button>
-                        <button class="status-button status-red" onclick="selectStatus(this, 'red')">
-                            <span class="emoji">🆘</span>
-                            <span>Need Support</span>
-                        </button>
-                    </div>
-                    <div id="team-followup" class="follow-up">
-                        <div class="follow-up-label">
-                            <span>🎯</span>
-                            <span>What's affecting your team?</span>
-                        </div>
-                        <div class="follow-up-options">
-                            <div class="option-chip" onclick="selectChip(this)">💪 Physical (fatigue, injury)</div>
-                            <div class="option-chip" onclick="selectChip(this)">🧠 Mental (stress, focus)</div>
-                            <div class="option-chip" onclick="selectChip(this)">❤️ Emotional (personal, mood)</div>
-                            <div class="option-chip" onclick="selectChip(this)">🤝 Team (conflicts, trust)</div>
-                            <div class="option-chip" onclick="selectChip(this)">🎯 Purpose (motivation, meaning)</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Team Status Comments -->
-                <div class="comments-section">
-                    <label class="comments-label" for="team-comments">Additional comments (optional)</label>
-                    <textarea id="team-comments" class="comments-box" placeholder="Any observations about your team today..."></textarea>
-                </div>
-                
-                <h2 class="section-title">
-                    <span>📊 Project Status</span>
-                    <span class="performance-score-display score-3" id="live-performance-score">3.0</span>
-                </h2>
-                
-                <!-- Crew Productivity -->
-                <div class="metric-group">
-                    <label class="metric-label">How did your crew's productivity compare to expectations today?</label>
-                    <div class="button-scale">
-                        <button class="scale-button scale-1" onclick="selectScale(this, 'prod', 1)">1</button>
-                        <button class="scale-button scale-2" onclick="selectScale(this, 'prod', 2)">2</button>
-                        <button class="scale-button scale-3 selected" onclick="selectScale(this, 'prod', 3)">3</button>
-                        <button class="scale-button scale-4" onclick="selectScale(this, 'prod', 4)">4</button>
-                        <button class="scale-button scale-5" onclick="selectScale(this, 'prod', 5)">5</button>
-                    </div>
-                    <div class="scale-labels">
-                        <div class="scale-label">Much<br>Lower</div>
-                        <div class="scale-label">Slightly<br>Lower</div>
-                        <div class="scale-label">As<br>Expected</div>
-                        <div class="scale-label">Slightly<br>Higher</div>
-                        <div class="scale-label">Much<br>Higher</div>
-                    </div>
-                    <div id="prod-followup" class="follow-up">
-                        <div class="follow-up-label">
-                            <span>📉</span>
-                            <span>What slowed your team down today?</span>
-                        </div>
-                        <div class="follow-up-options">
-                            <div class="option-chip" onclick="selectChip(this)">📦 Materials</div>
-                            <div class="option-chip" onclick="selectChip(this)">🌧️ Weather</div>
-                            <div class="option-chip" onclick="selectChip(this)">🔧 Equipment</div>
-                            <div class="option-chip" onclick="selectChip(this)">🤝 Coordination</div>
-                            <div class="option-chip" onclick="selectChip(this)">📋 Permits/Info</div>
-                            <div class="option-chip" onclick="selectChip(this)">👷 Manpower</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Field Directive Clarity -->
-                <div class="metric-group">
-                    <label class="metric-label">How smoothly did work flow based on your morning instructions?</label>
-                    <div class="button-scale">
-                        <button class="scale-button scale-1" onclick="selectScale(this, 'clarity', 1)">1</button>
-                        <button class="scale-button scale-2" onclick="selectScale(this, 'clarity', 2)">2</button>
-                        <button class="scale-button scale-3 selected" onclick="selectScale(this, 'clarity', 3)">3</button>
-                        <button class="scale-button scale-4" onclick="selectScale(this, 'clarity', 4)">4</button>
-                        <button class="scale-button scale-5" onclick="selectScale(this, 'clarity', 5)">5</button>
-                    </div>
-                    <div class="scale-labels">
-                        <div class="scale-label">Much<br>Lower</div>
-                        <div class="scale-label">Slightly<br>Lower</div>
-                        <div class="scale-label">As<br>Expected</div>
-                        <div class="scale-label">Slightly<br>Higher</div>
-                        <div class="scale-label">Much<br>Higher</div>
-                    </div>
-                    <div id="clarity-followup" class="follow-up">
-                        <div class="follow-up-label">
-                            <span>💭</span>
-                            <span>What would have improved work flow from your morning briefing?</span>
-                        </div>
-                        <div class="follow-up-options">
-                            <div class="option-chip" onclick="selectChip(this)">📊 Visual aids</div>
-                            <div class="option-chip" onclick="selectChip(this)">⏰ More time</div>
-                            <div class="option-chip" onclick="selectChip(this)">📐 Better drawings</div>
-                            <div class="option-chip" onclick="selectChip(this)">❓ Q&A time</div>
-                            <div class="option-chip" onclick="selectChip(this)">🔄 Clearer sequence</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Issue Resolution Speed -->
-                <div class="metric-group">
-                    <label class="metric-label">How quickly did you address problems before they impacted work?</label>
-                    <div class="button-scale">
-                        <button class="scale-button scale-1" onclick="selectScale(this, 'resolve', 1)">1</button>
-                        <button class="scale-button scale-2" onclick="selectScale(this, 'resolve', 2)">2</button>
-                        <button class="scale-button scale-3 selected" onclick="selectScale(this, 'resolve', 3)">3</button>
-                        <button class="scale-button scale-4" onclick="selectScale(this, 'resolve', 4)">4</button>
-                        <button class="scale-button scale-5" onclick="selectScale(this, 'resolve', 5)">5</button>
-                    </div>
-                    <div class="scale-labels">
-                        <div class="scale-label">Much<br>Lower</div>
-                        <div class="scale-label">Slightly<br>Lower</div>
-                        <div class="scale-label">As<br>Expected</div>
-                        <div class="scale-label">Slightly<br>Higher</div>
-                        <div class="scale-label">Much<br>Higher</div>
-                    </div>
-                    <div id="resolve-followup" class="follow-up">
-                        <div class="follow-up-label">
-                            <span>⏱️</span>
-                            <span>What slowed your response to field problems today?</span>
-                        </div>
-                        <div class="follow-up-options">
-                            <div class="option-chip" onclick="selectChip(this)">📱 Couldn't reach decision-makers</div>
-                            <div class="option-chip" onclick="selectChip(this)">🔍 Unclear on solution</div>
-                            <div class="option-chip" onclick="selectChip(this)">🚫 Lacked authority</div>
-                            <div class="option-chip" onclick="selectChip(this)">⏳ Waiting on others</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Safety Leadership -->
-                <div class="metric-group">
-                    <label class="metric-label">How actively did you engage your crew on safety today?</label>
-                    <div class="button-scale">
-                        <button class="scale-button scale-1" onclick="selectScale(this, 'safety', 1)">1</button>
-                        <button class="scale-button scale-2" onclick="selectScale(this, 'safety', 2)">2</button>
-                        <button class="scale-button scale-3 selected" onclick="selectScale(this, 'safety', 3)">3</button>
-                        <button class="scale-button scale-4" onclick="selectScale(this, 'safety', 4)">4</button>
-                        <button class="scale-button scale-5" onclick="selectScale(this, 'safety', 5)">5</button>
-                    </div>
-                    <div class="scale-labels">
-                        <div class="scale-label">Much<br>Lower</div>
-                        <div class="scale-label">Slightly<br>Lower</div>
-                        <div class="scale-label">As<br>Expected</div>
-                        <div class="scale-label">Slightly<br>Higher</div>
-                        <div class="scale-label">Much<br>Higher</div>
-                    </div>
-                    <div id="safety-followup" class="follow-up">
-                        <div class="follow-up-label">
-                            <span>⚠️</span>
-                            <span>What prevented you from engaging more actively on safety today?</span>
-                        </div>
-                        <div class="follow-up-options">
-                            <div class="option-chip" onclick="selectChip(this)">⏰ Time pressure</div>
-                            <div class="option-chip" onclick="selectChip(this)">🔥 Other priorities</div>
-                            <div class="option-chip" onclick="selectChip(this)">✅ No issues today</div>
-                            <div class="option-chip" onclick="selectChip(this)">😴 Team fatigue</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Project Status Comments -->
-                <div class="comments-section">
-                    <label class="comments-label" for="project-comments">Additional comments (optional)</label>
-                    <textarea id="project-comments" class="comments-box" placeholder="Any other observations about today's work..."></textarea>
-                </div>
-            </div>
-            
-            <div class="submit-section">
-                <button class="submit-button" onclick="submitCheckin()">Submit Daily Check-in</button>
-            </div>
-        </div>
-    </div>
+/* ----------  Supabase client  ---------- */
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-/* ---------- Supabase Auth helpers ---------- */
-async function sendMagicLink() {
-  const email = document.getElementById('email-input').value.trim();
-  if (!email) { alert('Enter an e‑mail'); return; }
-  const { error } = await db.auth.signInWithOtp({ email });
-  if (error) { alert(error.message); return; }
-  alert('Check your e‑mail for the sign‑in link.');
+/* ----------  Screen helpers  ---------- */
+const loginScreen      = document.getElementById('login-screen')
+const dashboardScreen  = document.getElementById('dashboard-screen')
+function showLogin(){ loginScreen.classList.add('active'); dashboardScreen.classList.remove('active')}
+function showDash (){ loginScreen.classList.remove('active'); dashboardScreen.classList.add('active')}
+
+/* ----------  Auth flow  ---------- */
+document.getElementById('magic-btn').onclick = async () =>{
+  const email = document.getElementById('email-input').value.trim()
+  if(!email){alert('Enter a valid email');return}
+  const { error } = await db.auth.signInWithOtp({email})
+  if(error) alert(error.message); else alert('Check your inbox!')
 }
 
-/* React to sign‑in / sign‑out */
-db.auth.onAuthStateChange(async (_event, session) => {
-  const loggedIn = !!session?.user;
-
-  document.getElementById('login-screen'    )
-          .classList.toggle('active', !loggedIn);
-
-  document.getElementById('dashboard-screen')
-          .classList.toggle('active',  loggedIn);
-
-  if (loggedIn) {           // grab name / crew / project after login
-    await loadProfile();
+db.auth.onAuthStateChange(async (_evt, session) =>{
+  if(session?.user){      // logged‑in
+     await loadProfile()  // pull crew / project, etc.
+     showDash()
+  }else{
+     showLogin()
   }
-});
+})
 
+/* ----------  Profile (crew / project / name) ---------- */
+async function loadProfile(){
+   const { data:{user} } = await db.auth.getUser()
+   if(!user) return
 
-
-/* Pull (or create) profile row */
-async function loadProfile() {
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) return;
-  let { data, error } = await db.from('profiles')
-                               .select('*')
-                               .eq('id', user.id)
-                               .single();
-  if (error && error.code === 'PGRST116') {   // row not found
-    await db.from('profiles').insert({ id: user.id, full_name: user.email });
-    data = { full_name: user.email };
-  }// row‑not‑found ‑‑ keep this
-if (error && error.code === 'PGRST116') {      // row not found
-  await db.from('profiles')
-          .insert({ id: user.id, full_name: user.email });
-  data = { full_name: user.email };
+   let { data, error } = await db.from('profiles')
+                                 .select('*').eq('id',user.id).single()
+   if(error && error.code==='PGRST116'){ // none yet
+      await db.from('profiles').insert({id:user.id,full_name:user.email})
+      data = {full_name:user.email}
+   }
+   // prompt for missing full name only the first time
+   if(!data.full_name || data.full_name===data.email){
+       const fullName = prompt('Your name (e.g. John Smith)')
+       if(fullName) {
+         await db.from('profiles')
+                 .update({full_name:fullName})
+                 .eq('id',user.id)
+         data.full_name = fullName
+       }
+   }
+   document.getElementById('welcome-text').textContent =
+        `Welcome back, ${data.full_name}`
+   document.getElementById('crew-info').textContent =
+        `Crew: ${data.crew||'—'} | Project: ${data.project||'—'}`
 }
 
-/* NEW ▼———————————————————————————————————————————— */
-if (!data.full_name || data.full_name === user.email) {
-  const fullName = prompt('Enter your name (e.g. John Smith)');
-  if (fullName) {
-    await db.from('profiles')
-            .update({ full_name: fullName })
-            .eq('id', user.id);
-    data.full_name = fullName;
-  }
-}
-/* END NEW ▲——————————————————————————————————————————— */
+/* ----------  Metric widgets ---------- */
+// rating scales 1‑5
+['prod','clarity','resolve','safety'].forEach(metric=>{
+   const row = document.createElement('div')
+   ;[1,2,3,4,5].forEach(n=>{
+     const span=document.createElement('span')
+     span.className='option-chip'; span.textContent=n
+     span.onclick=e=>{ row.querySelectorAll('.selected').forEach(s=>s.classList.remove('selected')); span.classList.add('selected')}
+     row.append(span)
+   })
+   document.getElementById(metric==='prod'?'prod-scale':metric+'-scale')?.append(row)
+})
+// helper function to grab selected chips
+const grab = sel=>[...document.querySelectorAll(sel+'.selected')].map(e=>e.dataset.val||e.textContent.trim())
 
-document.querySelector('.welcome-text').textContent =
-    `Welcome back, ${data.full_name}`;
+/* ----------  Submit daily check‑in ---------- */
+document.getElementById('submit-btn').onclick = async ()=>{
+  const { data:{user} } = await db.auth.getUser()
+  if(!user){alert('Login first');return}
 
-// ▼ add this line
-document.getElementById('crew-info').textContent =
-    `Crew: ${data.crew ?? '—'} | Project: ${data.project ?? '—'}`;
-// ▲ added line
-
-}   // ← this is the existing closing brace of loadProfile()
-
-</script>
-
-<!-- Initialise Supabase client -->
-<script>
-  const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL  = 'https://…';
-  const SUPABASE_KEY  = '…';
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  /* ───── NEW: handle magic‑link redirect ───── */
-  (async () => {
-    if (location.hash.includes('access_token')) {
-      /* this turns the hash into a stored session
-         and removes the hash from the URL */
-      const { error } = await db.auth.getSessionFromUrl({ storeSession: true });
-      if (error) alert('Login failed: ' + error.message);
-    }
-  })();
-  /* ────────────── end new block ────────────── */
-
-  /* the rest of your script … onAuthStateChange, loadProfile, etc. */
-</script>
-
-        // Store values for Project Performance Score calculation
-        let projectScores = {
-            prod: 3,
-            clarity: 3,
-            resolve: 3,
-            safety: 3
-        };
-        
-        let dashboardData = {
-            totalCheckins: 0,
-            todayCheckins: 0,
-            greenDays: 0,
-            todayStatus: null,
-            todayStatusText: null,
-            todayStatusEmoji: null
-        };
-        
-      /*  ────── LOCAL‑STORAGE LEGACY  ──────
-// Load saved data
-function loadData() {
-  const saved = localStorage.getItem('willisData');
-  if (saved) {
-    dashboardData = JSON.parse(saved);
-    updateDashboard();
-  }
-}
-
-// Save data
-function saveData() {
-  localStorage.setItem('willisData', JSON.stringify(dashboardData));
-}
-───────────────────────────────────── */
-
-        
-        // Update dashboard
-        function updateDashboard() {
-            document.getElementById('total-checkins').textContent = dashboardData.totalCheckins;
-            document.getElementById('green-days').textContent = dashboardData.greenDays;
-            
-            // Update performance score and card color
-            const score = calculatePerformanceScore();
-            const performanceCard = document.getElementById('performance-card');
-            const performanceScore = document.getElementById('performance-score');
-            performanceScore.textContent = score.toFixed(1);
-            
-            // Remove all score classes and add the appropriate one
-            performanceCard.classList.remove('score-1', 'score-2', 'score-3', 'score-4', 'score-5');
-            performanceCard.classList.add(`score-${Math.round(score)}`);
-            
-            // Update team status card
-            const teamStatusCard = document.getElementById('team-status-card');
-            const teamStatusText = document.getElementById('team-status-text');
-            const teamStatusEmoji = document.getElementById('team-status-emoji');
-            
-            if (dashboardData.todayStatus) {
-                // Remove all status classes and add the appropriate one
-                teamStatusCard.classList.remove('status-green', 'status-yellow', 'status-orange', 'status-red');
-                teamStatusCard.classList.add(`status-${dashboardData.todayStatus}`);
-                
-                teamStatusText.textContent = dashboardData.todayStatusText || 'No Check-in';
-                teamStatusEmoji.textContent = dashboardData.todayStatusEmoji || '—';
-            } else {
-                teamStatusCard.classList.remove('status-green', 'status-yellow', 'status-orange', 'status-red');
-                teamStatusCard.style.background = 'white';
-                teamStatusText.textContent = 'No Check-in';
-                teamStatusText.style.color = '#7f8c8d';
-                teamStatusEmoji.textContent = '—';
-                teamStatusEmoji.style.color = '#7f8c8d';
-                const teamStatusLabel = teamStatusCard.querySelector('.metric-label');
-                if (teamStatusLabel) teamStatusLabel.style.color = '#7f8c8d';
-            }
-        }
-        
-        // Calculate Project Performance Score using the correct formula
-        function calculatePerformanceScore() {
-            const score = (0.35 * projectScores.prod) + 
-                         (0.25 * projectScores.clarity) + 
-                         (0.20 * projectScores.resolve) + 
-                         (0.20 * projectScores.safety);
-            
-            return Math.min(5, Math.max(1, score)); // Ensure score is between 1 and 5
-        }
-        
-        // Update live performance score
-        function updateLiveScore() {
-            const score = calculatePerformanceScore();
-            const scoreDisplay = document.getElementById('live-performance-score');
-            scoreDisplay.textContent = score.toFixed(1);
-            
-            // Update color class
-            scoreDisplay.classList.remove('score-1', 'score-2', 'score-3', 'score-4', 'score-5');
-            scoreDisplay.classList.add(`score-${Math.round(score)}`);
-        }
-        
-        // Handle scale button selection and IF/THEN logic
-        function selectScale(button, metric, value) {
-            // Clear previous selection
-            const parent = button.parentElement;
-            parent.querySelectorAll('.scale-button').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            button.classList.add('selected');
-            
-            // Update score
-            projectScores[metric] = value;
-            updateLiveScore();
-            
-            // Handle IF/THEN logic
-            const followup = document.getElementById(metric + '-followup');
-            
-            switch(metric) {
-                case 'prod':
-                    if (value <= 2) {
-                        followup.querySelector('.follow-up-label span:last-child').textContent = 'What slowed your team down today?';
-                        followup.classList.add('show');
-                    } else if (value >= 4) {
-                        followup.querySelector('.follow-up-label span:last-child').textContent = 'What helped your team exceed expectations today?';
-                        followup.classList.add('show');
-                    } else {
-                        followup.classList.remove('show');
-                    }
-                    break;
-                    
-                case 'clarity':
-                case 'resolve':
-                case 'safety':
-                    if (value <= 2) {
-                        followup.classList.add('show');
-                    } else {
-                        followup.classList.remove('show');
-                    }
-                    break;
-            }
-            
-            updateProgress();
-        }
-        
-        // Handle status button selection
-        function selectStatus(button, status) {
-            // Clear previous selection
-            const parent = button.parentElement;
-            parent.querySelectorAll('.status-button').forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            button.classList.add('selected');
-            
-            dashboardData.todayStatus = status;
-            
-            // Store the text and emoji for the status
-            switch(status) {
-                case 'green':
-                    dashboardData.todayStatusText = 'Energized & Connected';
-                    dashboardData.todayStatusEmoji = '💪';
-                    break;
-                case 'yellow':
-                    dashboardData.todayStatusText = 'Managing OK';
-                    dashboardData.todayStatusEmoji = '👍';
-                    break;
-                case 'orange':
-                    dashboardData.todayStatusText = 'Some Struggling';
-                    dashboardData.todayStatusEmoji = '😐';
-                    break;
-                case 'red':
-                    dashboardData.todayStatusText = 'Need Support';
-                    dashboardData.todayStatusEmoji = '🆘';
-                    break;
-            }
-            
-            // Show follow-up for orange or red
-            const followup = document.getElementById('team-followup');
-            if (status === 'orange' || status === 'red') {
-                followup.classList.add('show');
-            } else {
-                followup.classList.remove('show');
-            }
-            
-            updateProgress();
-        }
-        
-        // Handle chip selection
-        function selectChip(chip) {
-            chip.classList.toggle('selected');
-        }
-        
-        // Update progress bar
-        function updateProgress() {
-            // Total questions: 1 team status + 4 project metrics
-            const totalQuestions = 5;
-            const answered = document.querySelectorAll('.scale-button.selected, .status-button.selected').length;
-            const progress = (answered / totalQuestions) * 100;
-            document.querySelector('.progress-fill').style.width = progress + '%';
-        }
-        
-        // Show check-in form
-        function showCheckinForm() {
-            document.getElementById('dashboard-screen').classList.remove('active');
-            document.getElementById('checkin-screen').classList.add('active');
-            updateLiveScore();
-        }
-        
-        // Show dashboard
-        function showDashboard() {
-            document.getElementById('checkin-screen').classList.remove('active');
-            document.getElementById('dashboard-screen').classList.add('active');
-        }
-        /* ── helper: returns an array of selected chip texts inside a follow‑up div ── */
-function grabTags(followupId) {
-  return Array.from(
-    document.querySelectorAll(`#${followupId} .option-chip.selected`)
-  ).map(chip => chip.textContent.trim());
-}
-
-        // Submit check-in
-        
-async function submitCheckin() {
-  // NEW: make sure we have a signed‑in user
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) {                       // should not happen, but be safe
-    alert('Please sign in first'); 
-    return;
-  }
-
-  /* build a row to insert */
   const payload = {
-    user_id: user.id,                // NEW line
-    team_status: dashboardData.todayStatus,
-    team_tags:   grabTags('team-followup'),
-    team_comment: document.getElementById('team-comments').value,
-
-    // project metrics
-    prod:   projectScores.prod,
-    clarity: projectScores.clarity,
-    resolve: projectScores.resolve,
-    safety:  projectScores.safety,
-
-    // follow‑up tags
-    prod_tags:    grabTags('prod-followup'),
-    clarity_tags: grabTags('clarity-followup'),
-    resolve_tags: grabTags('resolve-followup'),
-    safety_tags:  grabTags('safety-followup'),
-
-    project_comment: document.getElementById('project-comments').value
-    // created_at is auto‑filled by Supabase
-  };
-
-
-  /* 2️⃣ write to Supabase   */
-  const { error } = await db.from('checkins').insert(payload);
-  if (error) {
-    alert('Error saving check‑in:\n' + error.message);
-    console.error(error);
-    return;
+    user_id : user.id,
+    // team
+    team_status : grab('#team-options .option-chip')[0]||null,
+    team_tags   : grab('#team-tags .option-chip'),
+    team_comment: document.getElementById('team-comments').value.trim()||null,
+    // project ratings
+    prod   : +grab('#prod-scale .option-chip')[0]||null,
+    clarity: +grab('#clarity-scale .option-chip')[0]||null,
+    resolve: +grab('#resolve-scale .option-chip')[0]||null,
+    safety : +grab('#safety-scale .option-chip')[0]||null,
+    // project helper tags
+    prod_tags   : grab('#prod-tags .option-chip'),
+    clarity_tags: grab('#clarity-tags .option-chip'),
+    resolve_tags: grab('#resolve-tags .option-chip'),
+    safety_tags : grab('#safety-tags .option-chip'),
+    // ⬇ NEW fields requested
+    address_tags: grab('#resolve-tags .option-chip'),          // <‑‑ adjust selector
+    project_score: calcProjectScore(),
+    project_comment: document.getElementById('project-comments').value.trim()||null
   }
-
-  /* 3️⃣ refresh dashboard from DB so counts stay in sync */
-  await refreshDashboard();
-
-  /* 4️⃣ return to dashboard & reset form */
-  showDashboard();
-  resetForm();
+  const { error } = await db.from('checkins').insert(payload)
+  if(error){ alert(error.message); console.error(error) }
+  else { alert('Saved ✓'); location.reload() }
 }
-/* ────────────────────────────────────────────────────────────────
-   LOAD ALL ROWS & UPDATE DASHBOARD
-   ────────────────────────────────────────────────────────────── */
-async function refreshDashboard() {
-  const { data, error } = await db.from('checkins').select('*');
-  if (error) { console.error(error); return; }
-
-  // aggregate
-  dashboardData.totalCheckins = data.length;
-  dashboardData.greenDays     = data.filter(r => r.team_status === 'green').length;
-
-  // latest row (if any) = today’s status
-  const last = data.at(-1);
-  if (last) {
-    dashboardData.todayStatus      = last.team_status;
-    dashboardData.todayStatusText  = {
-      green: 'Energized & Connected',
-      yellow: 'Managing OK',
-      orange: 'Some Struggling',
-      red: 'Need Support'
-    }[last.team_status];
-    dashboardData.todayStatusEmoji = { green:'💪', yellow:'👍', orange:'😐', red:'🆘' }[last.team_status];
-
-    projectScores = {
-      prod:    last.prod,
-      clarity: last.clarity,
-      resolve: last.resolve,
-      safety:  last.safety
-    };
-  }
-
-  updateDashboard();   // your existing DOM updater
+function calcProjectScore(){
+   const vals=['prod','clarity','resolve','safety'].map(m=>+grab('#'+m+'-scale .option-chip')[0]||3)
+   return (vals.reduce((a,b)=>a+b,0)/4).toFixed(1)
 }
 
-        
-        // Reset form
-        function resetForm() {
-            projectScores = { prod: 3, clarity: 3, resolve: 3, safety: 3 };
-            document.querySelectorAll('.follow-up').forEach(el => el.classList.remove('show'));
-            document.querySelectorAll('.option-chip.selected').forEach(el => el.classList.remove('selected'));
-            document.querySelectorAll('textarea').forEach(el => el.value = '');
-        }
-        
-   // Initialize – attempt silent session restore
-(async () => {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) {
-    document.getElementById('login-screen').classList.remove('active');
-    await loadProfile();
-    await refreshDashboard();
-  } else {
-    document.getElementById('login-screen').classList.add('active');
-  }
-  updateProgress();
-})();
-
-
-        
-        // Ensure default styling on initial load
-        if (!dashboardData.todayStatus) {
-            const teamStatusCard = document.getElementById('team-status-card');
-            const teamStatusText = document.getElementById('team-status-text');
-            const teamStatusEmoji = document.getElementById('team-status-emoji');
-            const teamStatusLabel = teamStatusCard.querySelector('.metric-label');
-            teamStatusCard.style.background = 'white';
-            teamStatusText.style.color = '#7f8c8d';
-            teamStatusEmoji.style.color = '#7f8c8d';
-            if (teamStatusLabel) teamStatusLabel.style.color = '#7f8c8d';
-        }
-        async function logout(){
-  await db.auth.signOut();
-  // clear any client‑side state
-  showLoginScreen();   // hide dashboard, show login
+/* ----------  Sign‑out ---------- */
+document.getElementById('logout-btn').onclick = async () =>{
+   await db.auth.signOut(); showLogin()
 }
-
-    </script>
+</script>
 </body>
 </html>

@@ -563,6 +563,17 @@
   color:#2c3e50;
 }
 <a href="#" id="logout-btn" class="logout-link" onclick="logout()">Log&nbsp;out</a>
+/* ───── Stack & stretch login input + button ───── */
+#login-screen .card input[type="email"],
+#login-screen .card button{
+  display:block;        /* pushes button onto its own line   */
+  width:100%;           /* fills whole card                   */
+  box-sizing:border-box;/* keeps padding inside the 100 %     */
+}
+
+#login-screen .card button{          /* tiny spacing tweak   */
+  margin-top:1rem;       /* 16 px gap under the text box      */
+}
 
 
     </style>

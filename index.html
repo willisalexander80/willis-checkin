@@ -105,10 +105,66 @@
 <!----------------------------------------------------
   DASHBOARD SCREEN  (hidden until the user logs in)
 ----------------------------------------------------->
+<!-- DASHBOARD SCREEN  ─────────────────────────────────────────── -->
 <div id="dashboard-screen" class="screen">
-  <h2>Welcome – you are logged in! (placeholder)</h2>
-  <button onclick="logout()">Log out</button>
-</div>
+
+  <div class="container">
+    <div class="dashboard-container">
+
+      <!-- header strip -->
+      <div class="dashboard-header">
+        <h1 class="welcome-text">Welcome back, John Smith</h1>
+        <div class="dashboard-subtitle">Jobsite Dashboard</div>
+        <div id="crew-info" class="crew-info">Crew: — | Project: —</div>
+
+        <!-- top‑right log‑out -->
+        <button id="logout-btn"
+                onclick="logout()"
+                style="position:absolute;top:20px;right:20px;
+                       padding:8px 14px;font-size:14px;border:none;
+                       border-radius:6px;background:#fff;color:#2c3e50;
+                       cursor:pointer">
+          Log out
+        </button>
+      </div>
+
+      <!-- four quick metrics -->
+      <div class="metrics-grid">
+
+        <div class="metric-card">
+          <div id="total-checkins" class="metric-number">0</div>
+          <div class="metric-label">Total Check‑ins</div>
+        </div>
+
+        <div id="team-status-card" class="metric-card team-status-card">
+          <div id="team-status-emoji"  class="team-status-emoji">—</div>
+          <div id="team-status-text"   class="team-status-text">No Check‑in</div>
+          <div class="metric-label">Today’s Team Status</div>
+        </div>
+
+        <div class="metric-card">
+          <div id="green-days" class="metric-number">0</div>
+          <div class="metric-label">Team Green Days</div>
+        </div>
+
+        <div id="performance-card" class="metric-card performance-card">
+          <div id="performance-score" class="metric-number">3.0</div>
+          <div class="metric-label">Project Performance</div>
+        </div>
+
+      </div><!-- /.metrics-grid -->
+
+      <!-- fixed blue CTA -->
+      <button class="check-in-button" onclick="showCheckinForm()">
+        Start Daily Check‑in
+      </button>
+
+    </div><!-- /.dashboard-container -->
+  </div><!-- /.container -->
+
+</div><!-- /#dashboard-screen -->
+<!-- ────────────────────────────────────────────────────────────── -->
+
 
 <!-- --------------------------------------------------
      MAIN SCRIPT

@@ -522,31 +522,48 @@
         .back-button:hover {
             background: rgba(255,255,255,0.3);
         }
-       /* Center the login card vertically & horizontally */
-.login-wrapper{
+      /* Center login card */
+#login-screen .login-wrap{
   display:flex;
-  flex-direction:column;
-  justify-content:center;   /* vertical */
-  align-items:center;        /* horizontal */
-  min-height:100vh;          /* take whole screen */
+  min-height:100vh;      /* fill full screen */
+  align-items:center;    /* vertical center */
+  justify-content:center;/* horizontal center */
 }
+
+/* optional: tidy up the inner box */
+#login-screen .card{
+  width:100%;
+  max-width:26rem;       /* 420 px */
+  padding:0 1.5rem;      /* side breathing room */
+  text-align:center;
+}
+.logout-link{
+  position:absolute;
+  top:1rem;
+  right:1rem;
+  font-size:0.9rem;
+  font-weight:500;
+  text-decoration:none;
+  color:#2c3e50;
+}
+<a href="#" id="logout-btn" class="logout-link" onclick="logout()">Log&nbsp;out</a>
+
 
     </style>
 </head>
 <body>
   <!-- LOGIN SCREEN -->
-<div id="login-screen" class="screen active login-wrapper">
-
-  <div class="container" style="padding:20px;text-align:center">
-
-    <h1>Jobsite Daily Check‑in</h1>
-    <p>Sign in with your company e‑mail to continue</p>
-    <input id="email-input" type="email"
-           placeholder="you@company.com" style="width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #ccc;">
-    <button class="submit-button" style="margin-top:20px"
-            onclick="sendMagicLink()">Send magic link</button>
+<div id="login-screen" class="screen active">
+  <div class="login-wrap">   <!-- NEW wrapper -->
+    <div class="card">       <!-- keeps your padding -->
+      <h1>Jobsite Daily Check‑in</h1>
+      <p>Sign in with your company e‑mail to continue</p>
+      <input …>
+      <button …>Send magic link</button>
+    </div>
   </div>
 </div>
+
 
     <!-- Dashboard Screen -->
     <div id="dashboard-screen" class="screen active">
@@ -1200,6 +1217,12 @@ async function refreshDashboard() {
             teamStatusEmoji.style.color = '#7f8c8d';
             if (teamStatusLabel) teamStatusLabel.style.color = '#7f8c8d';
         }
+        async function logout(){
+  await db.auth.signOut();
+  // clear any client‑side state
+  showLoginScreen();   // hide dashboard, show login
+}
+
     </script>
 </body>
 </html>

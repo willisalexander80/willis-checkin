@@ -522,37 +522,58 @@
         .back-button:hover {
             background: rgba(255,255,255,0.3);
         }
-      /* Center login card */
-#login-screen .login-wrap{
-  display:flex;
-  min-height:100vh;      /* fill full screen */
-  align-items:center;    /* vertical center */
-  justify-content:center;/* horizontal center */
-}
-/* ───── Bigger login‑screen typography ───── */
-#login-screen .card p{
-  /* label under the H1 */
-  font-size: 1.25rem;      /* 20 px on default 16 px root */
-  margin-bottom: 1rem;
-}
-
-#login-screen .card input[type="email"]{
-  font-size: 1.125rem;     /* 18 px */
-  padding: 0.85rem 1rem;   /* taller field */
-}
-
-#login-screen .card button{
-  font-size: 1.25rem;      /* 20 px text on button */
-  padding: 0.9rem 1rem;    /* taller & wider click target */
-}
-
-/* optional: tidy up the inner box */
+     /* ── Login card ────────────────────────────────────────────── */
 #login-screen .card{
-  width:100%;
-  max-width:26rem;       /* 420 px */
-  padding:0 1.5rem;      /* side breathing room */
-  text-align:center;
+  max-width:460px;
+  width:90%;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:12px;                           /* ← smaller gap          */
 }
+
+/* make both controls equally tall & rounded */
+#login-screen .card input,
+#login-screen .card button{
+  height:56px;                        /* same height, same look */
+  width:100%;
+  border-radius:12px;                 /* same rounded corners   */
+  font-size:18px;
+  box-sizing:border-box;
+}
+/* email box specific tweaks */
+#login-screen .card input{
+  padding:0 16px;
+}
+
+/* blue “Send magic link” button */
+#login-screen .card button{
+  background:#1c90e4;                 /* same blue as your other btn */
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  font-weight:600;
+  transition:filter .15s;
+}
+#login-screen .card button:active{
+  filter:brightness(.9);
+}
+
+/* ── Four‑colour scale above the heading ───────────────────── */
+.scale-strip{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin:0 auto 32px;                 /* bottom gap before <h1> */
+}
+.scale-strip .bar{
+  width:44px; height:12px; border-radius:4px;
+}
+.bar.red    { background:#e74c3c; }
+.bar.orange { background:#e67e22; }
+.bar.yellow { background:#f1c40f; }
+.bar.green  { background:#27ae60; }
+
 .logout-link{
   position:absolute;
   top:1rem;
@@ -602,17 +623,29 @@
     </style>
 </head>
 <body>
-  <!-- LOGIN SCREEN -->
+ <!-- LOGIN SCREEN -->
 <div id="login-screen" class="screen active">
-  <div class="login-wrap">   <!-- NEW wrapper -->
-    <div class="card">       <!-- keeps your padding -->
-      <h1>Jobsite Daily Check‑in</h1>
-      <p>Sign in with your company e‑mail to continue</p>
-      <input …>
-      <button …>Send magic link</button>
+  <div class="container">
+
+    <!-- ★ new colourful scale bar -->
+    <div class="scale-strip">
+      <span class="bar red"></span>
+      <span class="bar orange"></span>
+      <span class="bar yellow"></span>
+      <span class="bar green"></span>
     </div>
+
+    <h1>Jobsite Daily Check‑in</h1>
+    <p>Sign in with your company e‑mail to continue</p>
+
+    <div class="card">
+      <input id="email-input" type="email" placeholder="you@company.com">
+      <button onclick="sendMagicLink()">Send magic link</button>
+    </div>
+
   </div>
 </div>
+
 
 
     <!-- Dashboard Screen -->

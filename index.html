@@ -631,6 +631,10 @@
   padding:0 20px;              /* keep side gutters on phones           */
   text-align:center;           /* <h1> & <p> perfectly centred          */
 }
+/* put this in <style> … </style> inside <head>,  
+   or in your main .css file */
+.screen         { display:none; }   /* hidden by default      */
+.screen.active  { display:block; }  /* shown when class=active */
 
     </style>
 </head>
@@ -661,7 +665,7 @@
 
 
     <!-- Dashboard Screen -->
-    <div id="dashboard-screen" class="screen active">
+    <div id="dashboard-screen" class="screen">
         <div class="container">
             <div class="dashboard-container">
                 <div class="dashboard-header">
@@ -925,13 +929,20 @@ async function sendMagicLink() {
 }
 
 /* React to sign‑in / sign‑out */
-db.auth.onAuthStateChange((event, session) => {
+db.auth.onAuthStateChange(async (_event, session) => {
   const loggedIn = !!session?.user;
-  document.getElementById('login-screen')
+
+  document.getElementById('login-screen'    )
           .classList.toggle('active', !loggedIn);
+
   document.getElementById('dashboard-screen')
-          .classList.toggle('active', loggedIn);
+          .classList.toggle('active',  loggedIn);
+
+  if (loggedIn) {           // grab name / crew / project after login
+    await loadProfile();
+  }
 });
+
 
 
 /* Pull (or create) profile row */

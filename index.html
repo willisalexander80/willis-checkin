@@ -619,6 +619,18 @@
   width:100%;                    /* stretch to the card’s width       */
   box-sizing:border-box;         /* keep paddings inside the 100 %    */
 }
+/* FINAL centring pass for the login page -------------------------------- */
+#login-screen .container{
+  /* put the whole strip in the middle of the page */
+  min-height:100vh;            /* full viewport height                  */
+  display:flex;
+  flex-direction:column;
+  justify-content:center;      /* ⬆  vertically centre                  */
+  align-items:center;          /* ⬅  centre everything horizontally     */
+  gap:24px;                    /* breathing room between strip / title  */
+  padding:0 20px;              /* keep side gutters on phones           */
+  text-align:center;           /* <h1> & <p> perfectly centred          */
+}
 
     </style>
 </head>

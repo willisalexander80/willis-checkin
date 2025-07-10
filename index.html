@@ -581,6 +581,23 @@
   width:90%;         /* small‑screen fallback       */
   margin:0 auto;     /* centres left‑right          */
 }
+/* ─── Login card (stack children) ─── */
+#login-screen .card{
+  max-width:460px;               /* ← from last step                  */
+  width:90%;
+  margin:0 auto;
+
+  /* NEW ↓ – make children stack top‑to‑bottom */
+  display:flex;
+  flex-direction:column;
+  gap:24px;                      /* space between input & button      */
+}
+
+#login-screen .card input,
+#login-screen .card button{
+  width:100%;                    /* stretch to the card’s width       */
+  box-sizing:border-box;         /* keep paddings inside the 100 %    */
+}
 
     </style>
 </head>

@@ -1003,10 +1003,26 @@ document.getElementById('crew-info').textContent =
   const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL  = 'https://…';
+  const SUPABASE_KEY  = '…';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  /* ───── NEW: handle magic‑link redirect ───── */
+  (async () => {
+    if (location.hash.includes('access_token')) {
+      /* this turns the hash into a stored session
+         and removes the hash from the URL */
+      const { error } = await db.auth.getSessionFromUrl({ storeSession: true });
+      if (error) alert('Login failed: ' + error.message);
+    }
+  })();
+  /* ────────────── end new block ────────────── */
+
+  /* the rest of your script … onAuthStateChange, loadProfile, etc. */
 </script>
 
-  
-    <script>
         // Store values for Project Performance Score calculation
         let projectScores = {
             prod: 3,

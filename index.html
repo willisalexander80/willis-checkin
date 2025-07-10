@@ -1,6 +1,18 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  …
+
+  <!-- screen‑switcher rules -->
+  <style>
+    .screen        { display: none; }  /* hidden by default */
+    .screen.active { display: block; } /* visible when .active is present */
+  </style>
+
+  …
+</head>
+
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WILLIS Daily Check-in</title>
@@ -631,13 +643,15 @@
   padding:0 20px;              /* keep side gutters on phones           */
   text-align:center;           /* <h1> & <p> perfectly centred          */
 }
-/* put this in <style> … </style> inside <head>,  
-   or in your main .css file */
-.screen         { display:none; }   /* hidden by default      */
-.screen.active  { display:block; }  /* shown when class=active */
+
+/* put this in <style> … </style> inside <head>,
+    or in your main .css file */
+.screen        { display:none; }  /* hidden by default */
+.screen.active { display:block; } /* shown when class=active */
 
     </style>
 </head>
+
 <body>
  <!-- LOGIN SCREEN -->
 <div id="login-screen" class="screen active">

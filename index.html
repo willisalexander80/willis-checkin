@@ -925,18 +925,14 @@ async function sendMagicLink() {
 }
 
 /* React to sign‑in / sign‑out */
-db.auth.onAuthStateChange(async (event, session) => {
-  if (session) {                         // signed in
-    document.getElementById('login-screen').classList.remove('active');
-    document.getElementById('dashboard-screen').classList.add('active');
-    await loadProfile();                 // populate name
-    await refreshDashboard();            // load data
-  } else {                               // signed out
-    document.getElementById('login-screen').classList.add('active');
-    document.getElementById('dashboard-screen').classList.remove('active');
-    document.getElementById('checkin-screen').classList.remove('active');
-  }
+db.auth.onAuthStateChange((event, session) => {
+  const loggedIn = !!session?.user;
+  document.getElementById('login-screen')
+          .classList.toggle('active', !loggedIn);
+  document.getElementById('dashboard-screen')
+          .classList.toggle('active', loggedIn);
 });
+
 
 /* Pull (or create) profile row */
 async function loadProfile() {

@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>WILLIS Daily Check‑in</title>
+<title>WILLIS Daily Check‑in</title>
 
 <!-- ‑‑‑ global/reset + colour / typography ‑‑‑ -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
      background:#f5f6fa;color:#2c3e50;min-height:100vh}
 .container{max-width:500px;margin:0 auto;background:#fff;min-height:100vh;
            box-shadow:0 0 20px rgba(0,0,0,.08)}
 
-/* screen‑switcher */
+/* screen‑switcher */
 .screen{display:none} .screen.active{display:block}
 
-/* ──────── LOGIN ──────── */
+/* ──────── LOGIN ──────── */
 #login-screen .container{display:flex;flex-direction:column;justify-content:center;
                          align-items:center;gap:24px;padding:0 20px;text-align:center}
 .scale-strip{display:flex;gap:8px;margin-bottom:32px}
@@ -33,7 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
              transition:filter .15s}
 .card button:active{filter:brightness(.9)}
 
-/* ──────── DASHBOARD ──────── */
+/* ──────── DASHBOARD ──────── */
 .dashboard-header{background:#2c3e50;color:#fff;padding:30px 20px;margin-bottom:30px;position:relative}
 .welcome-text{font-size:28px;font-weight:600;margin-bottom:8px}
 .dashboard-subtitle{font-size:18px;opacity:.9}
@@ -46,7 +46,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 .metric-number{font-size:48px;font-weight:700;margin-bottom:8px}
 .metric-label{font-size:16px;color:#7f8c8d;font-weight:500}
 
-/* team‑status + performance coloured cards */
+/* team‑status + performance coloured cards */
 .team-status-card .metric-number,.team-status-card .metric-label,
 .performance-card .metric-number,.performance-card .metric-label{color:#fff}
 .status-green{background:#27ae60!important}.status-yellow{background:#f1c40f!important}
@@ -63,9 +63,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
                  cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.2)}
 .check-in-button:active{transform:translateX(-50%) scale(.98);background:#2980b9}
 
-/* ──────── CHECK‑IN form (kept from your style guide) ──────── */
-/*  (trimmed for brevity – all original styles preserved) */
-.form-section{padding:20px}.metric-group{margin-bottom:30px}
+/* ──────── CHECK‑IN FORM ──────── */
+.header{background:#2c3e50;color:#fff;padding:20px;display:flex;align-items:center;gap:16px}
+.back-button{background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:5px}
+.header h1{font-size:24px;font-weight:600}
+.form-section{padding:20px}
+.metric-group{margin-bottom:30px}
 .metric-label{font-size:16px;font-weight:500;color:#495057;margin-bottom:12px;display:block}
 .button-scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:5px}
 .scale-button{height:60px;border:2px solid transparent;border-radius:12px;font-size:14px;
@@ -76,7 +79,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 .scale-button.selected::after{content:'✓';position:absolute;top:4px;right:4px;font-size:16px}
 .scale-1{background:#e74c3c}.scale-2{background:#e67e22}.scale-3{background:#f1c40f}
 .scale-4{background:#27ae60}.scale-5{background:#3498db}
-/* (all other check‑in styles unchanged – retained from your sheet) */
+.scale-labels{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:11px;color:#7f8c8d}
+.status-buttons{display:flex;gap:12px;flex-wrap:wrap}
+.status-button{padding:10px 20px;border:2px solid #e1e8ed;border-radius:8px;background:#fff;
+               font-size:14px;cursor:pointer;transition:all .2s}
+.status-button:active{transform:scale(.95)}
+.status-button.selected{background:#2c3e50;color:#fff;border-color:#2c3e50}
+.tags-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.tag-button{padding:12px;border:2px solid #e1e8ed;border-radius:8px;background:#fff;
+            font-size:14px;cursor:pointer;transition:all .2s;text-align:center}
+.tag-button.selected{background:#3498db;color:#fff;border-color:#3498db}
+.notes-input{width:100%;min-height:100px;padding:12px;border:2px solid #e1e8ed;
+             border-radius:8px;font-size:16px;resize:vertical}
+.submit-section{padding:20px;position:sticky;bottom:0;background:#fff;
+                box-shadow:0 -5px 20px rgba(0,0,0,.08)}
+.submit-button{width:100%;padding:16px;background:#27ae60;color:#fff;border:none;
+               border-radius:12px;font-size:18px;font-weight:600;cursor:pointer}
+.submit-button:active{background:#229954}
+.team-status-emoji{font-size:32px;margin-bottom:8px}
+.team-status-text{font-size:14px;font-weight:600}
 </style>
 </head>
 
@@ -90,12 +111,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
       <span class="bar yellow"></span><span class="bar green"></span>
     </div>
 
-    <h1>Jobsite Daily Check‑in</h1>
+    <h1>Jobsite Daily Check‑in</h1>
     <p>Sign in with your company e‑mail to continue</p>
 
     <div class="card">
       <input id="email-input" type="email" placeholder="you@company.com" />
-      <button onclick="sendMagicLink()">Send magic link</button>
+      <button onclick="sendMagicLink()">Send magic link</button>
     </div>
   </div>
 </div>
@@ -104,97 +125,224 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 <div id="dashboard-screen" class="screen">
   <div class="container dashboard-container">
       <div class="dashboard-header">
-        <h1 class="welcome-text">Welcome back</h1>
-        <div class="dashboard-subtitle">Jobsite Dashboard</div>
-        <div id="crew-info" class="crew-info">Crew: — | Project: —</div>
-        <button id="logout-btn" onclick="logout()">Log out</button>
+        <h1 class="welcome-text">Welcome back</h1>
+        <div class="dashboard-subtitle">Jobsite Dashboard</div>
+        <div id="crew-info" class="crew-info">Crew: — | Project: —</div>
+        <button id="logout-btn" onclick="logout()">Log out</button>
       </div>
 
       <div class="metrics-grid">
         <div class="metric-card"><div id="total-checkins" class="metric-number">0</div>
-             <div class="metric-label">Total Check‑ins</div></div>
+             <div class="metric-label">Total Check‑ins</div></div>
 
         <div id="team-status-card" class="metric-card team-status-card status-grey">
-             <div id="team-status-emoji"  class="team-status-emoji">—</div>
-             <div id="team-status-text"   class="team-status-text">No Check‑in</div>
-             <div class="metric-label">Today's Team Status</div></div>
+             <div id="team-status-emoji" class="team-status-emoji">—</div>
+             <div id="team-status-text" class="team-status-text">No Check‑in</div>
+             <div class="metric-label">Today's Team Status</div></div>
 
         <div class="metric-card"><div id="green-days" class="metric-number">0</div>
-             <div class="metric-label">Team Green Days</div></div>
+             <div class="metric-label">Team Green Days</div></div>
 
         <div id="performance-card" class="metric-card performance-card score-3">
              <div id="performance-score" class="metric-number">3.0</div>
-             <div class="metric-label">Project Performance Score</div></div>
+             <div class="metric-label">Project Performance Score</div></div>
       </div>
 
-      <button class="check-in-button" onclick="showCheckinForm()">Start Daily Check‑in</button>
+      <button class="check-in-button" onclick="showCheckinForm()">Start Daily Check‑in</button>
   </div>
 </div>
 
 <!-- ░░ CHECK‑IN FORM ░░ -->
 <div id="checkin-screen" class="screen">
-  <!-- your full form markup is exactly as you supplied – omitted here for length -->
-  <!-- … keep everything from <div class="header"> down to </div class="submit-section"> … -->
+  <div class="container">
+    <div class="header">
+      <button class="back-button" onclick="backToDashboard()">←</button>
+      <h1>Daily Check-in</h1>
+    </div>
+
+    <div class="form-section">
+      <!-- Safety Awareness -->
+      <div class="metric-group">
+        <label class="metric-label">Safety Awareness</label>
+        <div class="button-scale">
+          <button class="scale-button scale-1" onclick="selectScale('safety', 1)">1</button>
+          <button class="scale-button scale-2" onclick="selectScale('safety', 2)">2</button>
+          <button class="scale-button scale-3" onclick="selectScale('safety', 3)">3</button>
+          <button class="scale-button scale-4" onclick="selectScale('safety', 4)">4</button>
+          <button class="scale-button scale-5" onclick="selectScale('safety', 5)">5</button>
+        </div>
+        <div class="scale-labels">
+          <span>Very Poor</span><span>Poor</span><span>Fair</span><span>Good</span><span>Excellent</span>
+        </div>
+      </div>
+
+      <!-- Quality Focus -->
+      <div class="metric-group">
+        <label class="metric-label">Quality Focus</label>
+        <div class="button-scale">
+          <button class="scale-button scale-1" onclick="selectScale('quality', 1)">1</button>
+          <button class="scale-button scale-2" onclick="selectScale('quality', 2)">2</button>
+          <button class="scale-button scale-3" onclick="selectScale('quality', 3)">3</button>
+          <button class="scale-button scale-4" onclick="selectScale('quality', 4)">4</button>
+          <button class="scale-button scale-5" onclick="selectScale('quality', 5)">5</button>
+        </div>
+      </div>
+
+      <!-- Team Communication -->
+      <div class="metric-group">
+        <label class="metric-label">Team Communication</label>
+        <div class="button-scale">
+          <button class="scale-button scale-1" onclick="selectScale('communication', 1)">1</button>
+          <button class="scale-button scale-2" onclick="selectScale('communication', 2)">2</button>
+          <button class="scale-button scale-3" onclick="selectScale('communication', 3)">3</button>
+          <button class="scale-button scale-4" onclick="selectScale('communication', 4)">4</button>
+          <button class="scale-button scale-5" onclick="selectScale('communication', 5)">5</button>
+        </div>
+      </div>
+
+      <!-- Productivity Level -->
+      <div class="metric-group">
+        <label class="metric-label">Productivity Level</label>
+        <div class="button-scale">
+          <button class="scale-button scale-1" onclick="selectScale('productivity', 1)">1</button>
+          <button class="scale-button scale-2" onclick="selectScale('productivity', 2)">2</button>
+          <button class="scale-button scale-3" onclick="selectScale('productivity', 3)">3</button>
+          <button class="scale-button scale-4" onclick="selectScale('productivity', 4)">4</button>
+          <button class="scale-button scale-5" onclick="selectScale('productivity', 5)">5</button>
+        </div>
+      </div>
+
+      <!-- Team Status -->
+      <div class="metric-group">
+        <label class="metric-label">How's the team feeling today?</label>
+        <div class="status-buttons">
+          <button class="status-button" onclick="selectStatus('strong')">💪 Strong</button>
+          <button class="status-button" onclick="selectStatus('good')">👍 Good</button>
+          <button class="status-button" onclick="selectStatus('tired')">😴 Tired</button>
+          <button class="status-button" onclick="selectStatus('stressed')">😰 Stressed</button>
+        </div>
+      </div>
+
+      <!-- Quick Tags -->
+      <div class="metric-group">
+        <label class="metric-label">Quick Tags (select all that apply)</label>
+        <div class="tags-grid">
+          <button class="tag-button" onclick="toggleTag('on-schedule')">On Schedule</button>
+          <button class="tag-button" onclick="toggleTag('weather-delay')">Weather Delay</button>
+          <button class="tag-button" onclick="toggleTag('material-issue')">Material Issue</button>
+          <button class="tag-button" onclick="toggleTag('safety-concern')">Safety Concern</button>
+          <button class="tag-button" onclick="toggleTag('client-happy')">Client Happy</button>
+          <button class="tag-button" onclick="toggleTag('overtime')">Overtime</button>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="metric-group">
+        <label class="metric-label">Additional Notes (optional)</label>
+        <textarea id="notes-input" class="notes-input" placeholder="Any important details..."></textarea>
+      </div>
+    </div>
+
+    <div class="submit-section">
+      <button class="submit-button" onclick="submitCheckin()">Submit Check-in</button>
+    </div>
+  </div>
 </div>
 
 <!-- ░░ SCRIPTS ░░ -->
-<!-- Initialise Supabase client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  // ─── Supabase client init ─────────────────────────────────────
   const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';  // ← swap yours in here
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // 1️⃣ If we arrived via magic-link, parse & store the session
-  ;(async () => {
-    if (location.hash.includes('access_token')) {
-      const { error } = await db.auth.getSessionFromUrl({ storeSession: true });
-      // hide the trailing hash from the URL
-      history.replaceState({}, document.title, window.location.pathname);
-      if (error) console.error('Magic link error:', error.message);
-    }
-  })();
-</script>
+  // ─── Form state ────────────────────────────────────────────────
+  let formData = {
+    safety: null,
+    quality: null,
+    communication: null,
+    productivity: null,
+    team_status: null,
+    tags: [],
+    notes: ''
+  };
 
-<script>
-  // ─── Toggle between login / dashboard on auth change ──────────
-  db.auth.onAuthStateChange(async (_event, session) => {
-    const loggedIn = !!session?.user;
-    document.getElementById('login-screen')    .classList.toggle('active', !loggedIn);
-    document.getElementById('dashboard-screen').classList.toggle('active',  loggedIn);
-
-    if (loggedIn) {
-      await loadProfile();
-      await refreshDashboard();   // if you have this already
+  // ─── Handle magic-link redirect ───────────────────────────────
+  window.addEventListener('load', async () => {
+    // Check if we're coming back from a magic link
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    if (hashParams.get('access_token')) {
+      // Let Supabase handle the session
+      const { data, error } = await db.auth.getSession();
+      if (!error && data.session) {
+        // Clear the hash to avoid re-processing
+        window.location.hash = '';
+      }
     }
   });
 
-  // ─── Load (or create) profile row, then inject into the DOM ───
+  // ─── Screen toggle on auth change ─────────────────────────────
+  db.auth.onAuthStateChange(async (event, session) => {
+    const loggedIn = !!session?.user;
+    document.getElementById('login-screen').classList.toggle('active', !loggedIn);
+    document.getElementById('dashboard-screen').classList.toggle('active', loggedIn);
+    document.getElementById('checkin-screen').classList.remove('active');
+
+    if (loggedIn) {
+      await loadProfile();
+      await refreshDashboard();
+    }
+  });
+
+  // ─── Send magic link ──────────────────────────────────────────
+  async function sendMagicLink() {
+    const email = document.getElementById('email-input').value.trim();
+    if (!email) {
+      alert('Please enter your work e-mail');
+      return;
+    }
+    
+    const { error } = await db.auth.signInWithOtp({
+      email: email,
+      options: {
+        emailRedirectTo: window.location.origin + window.location.pathname
+      }
+    });
+    
+    if (error) {
+      alert('Error: ' + error.message);
+      return;
+    }
+    
+    alert('✅ Check your inbox for the magic link!');
+  }
+
+  // ─── Load (or create) profile row ─────────────────────────────
   async function loadProfile() {
     const { data: { user } } = await db.auth.getUser();
     if (!user) return;
 
-    // fetch only the fields we need
     let { data, error } = await db
       .from('profiles')
       .select('full_name, crew, project')
       .eq('id', user.id)
       .single();
 
-    // if the row doesn't exist, create a stub
+    // If no profile exists yet, insert a stub:
     if (error && error.code === 'PGRST116') {
       await db.from('profiles').insert({
         id: user.id,
         full_name: user.email,
-        crew:      null,
-        project:   null
+        crew: null,
+        project: null
       });
       data = { full_name: user.email, crew: null, project: null };
     }
 
-    // if they never set a friendly name, prompt once
+    // Prompt for a friendly name if they haven't set one:
     if (!data.full_name || data.full_name === user.email) {
-      const name = prompt('What’s your name? (e.g. John Smith)');
+      const name = prompt('What's your name? (e.g. John Smith)');
       if (name) {
         await db
           .from('profiles')
@@ -204,49 +352,175 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
       }
     }
 
-    // update the header
-    document.querySelector('.welcome-text').textContent =
-      `Welcome back, ${data.full_name}`;
+    // Update DOM
+    document.querySelector('.welcome-text').textContent = `Welcome back, ${data.full_name}`;
+    document.getElementById('crew-info').textContent = `Crew: ${data.crew ?? '—'} | Project: ${data.project ?? '—'}`;
+  }
 
-    document.getElementById('crew-info').textContent =
-      `Crew: ${data.crew    ?? '—'}   |   Project: ${data.project ?? '—'}`;
+  // ─── Dashboard functions ───────────────────────────────────────
+  async function refreshDashboard() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    // Get all check-ins for this user
+    const { data: checkins } = await db
+      .from('checkins')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!checkins || checkins.length === 0) {
+      updateDashboard({ totalCheckins: 0, greenDays: 0, avgScore: 3.0, todayStatus: null });
+      return;
+    }
+
+    // Calculate metrics
+    const totalCheckins = checkins.length;
+    const scores = checkins.map(c => 
+      (c.safety + c.quality + c.communication + c.productivity) / 4
+    );
+    const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    
+    // Count green days (average >= 3.5)
+    const greenDays = scores.filter(s => s >= 3.5).length;
+    
+    // Today's status
+    const today = new Date().toDateString();
+    const todayCheckin = checkins.find(c => 
+      new Date(c.created_at).toDateString() === today
+    );
+
+    updateDashboard({
+      totalCheckins,
+      greenDays,
+      avgScore,
+      todayStatus: todayCheckin?.team_status || null
+    });
+  }
+
+  function updateDashboard(data) {
+    document.getElementById('total-checkins').textContent = data.totalCheckins;
+    document.getElementById('green-days').textContent = data.greenDays;
+    document.getElementById('performance-score').textContent = data.avgScore.toFixed(1);
+    
+    // Update performance card color
+    const perfCard = document.getElementById('performance-card');
+    perfCard.className = 'metric-card performance-card score-' + Math.round(data.avgScore);
+    
+    // Update team status
+    const statusCard = document.getElementById('team-status-card');
+    const statusEmoji = document.getElementById('team-status-emoji');
+    const statusText = document.getElementById('team-status-text');
+    
+    if (data.todayStatus) {
+      const statusMap = {
+        'strong': { emoji: '💪', text: 'Strong', color: 'status-green' },
+        'good': { emoji: '👍', text: 'Good', color: 'status-yellow' },
+        'tired': { emoji: '😴', text: 'Tired', color: 'status-orange' },
+        'stressed': { emoji: '😰', text: 'Stressed', color: 'status-red' }
+      };
+      const status = statusMap[data.todayStatus];
+      statusEmoji.textContent = status.emoji;
+      statusText.textContent = status.text;
+      statusCard.className = 'metric-card team-status-card ' + status.color;
+    } else {
+      statusEmoji.textContent = '—';
+      statusText.textContent = 'No Check-in';
+      statusCard.className = 'metric-card team-status-card';
+    }
+  }
+
+  // ─── Form functions ────────────────────────────────────────────
+  function showCheckinForm() {
+    document.getElementById('dashboard-screen').classList.remove('active');
+    document.getElementById('checkin-screen').classList.add('active');
+  }
+
+  function backToDashboard() {
+    document.getElementById('checkin-screen').classList.remove('active');
+    document.getElementById('dashboard-screen').classList.add('active');
+    // Reset form
+    document.querySelectorAll('.scale-button.selected').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.status-button.selected').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.tag-button.selected').forEach(b => b.classList.remove('selected'));
+    document.getElementById('notes-input').value = '';
+    formData = { safety: null, quality: null, communication: null, productivity: null, team_status: null, tags: [], notes: '' };
+  }
+
+  function selectScale(metric, value) {
+    // Clear previous selection
+    document.querySelectorAll(`.metric-group:has(button[onclick*="${metric}"]) .scale-button`)
+      .forEach(b => b.classList.remove('selected'));
+    // Set new selection
+    event.target.classList.add('selected');
+    formData[metric] = value;
+  }
+
+  function selectStatus(status) {
+    // Clear previous selection
+    document.querySelectorAll('.status-button').forEach(b => b.classList.remove('selected'));
+    // Set new selection
+    event.target.classList.add('selected');
+    formData.team_status = status;
+  }
+
+  function toggleTag(tag) {
+    event.target.classList.toggle('selected');
+    if (formData.tags.includes(tag)) {
+      formData.tags = formData.tags.filter(t => t !== tag);
+    } else {
+      formData.tags.push(tag);
+    }
+  }
+
+  async function submitCheckin() {
+    // Validate required fields
+    if (!formData.safety || !formData.quality || !formData.communication || 
+        !formData.productivity || !formData.team_status) {
+      alert('Please complete all required fields');
+      return;
+    }
+
+    // Get notes
+    formData.notes = document.getElementById('notes-input').value;
+
+    // Get user
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    // Submit to database
+    const { error } = await db.from('checkins').insert({
+      user_id: user.id,
+      safety: formData.safety,
+      quality: formData.quality,
+      communication: formData.communication,
+      productivity: formData.productivity,
+      team_status: formData.team_status,
+      tags: formData.tags,
+      notes: formData.notes
+    });
+
+    if (error) {
+      alert('Error submitting check-in: ' + error.message);
+      return;
+    }
+
+    alert('✅ Check-in submitted successfully!');
+    backToDashboard();
+    refreshDashboard();
   }
 
   // ─── Log out helper ────────────────────────────────────────────
   async function logout() {
     await db.auth.signOut();
-    // onAuthStateChange will flip you back to the login screen
   }
-</script>
 
-
-
-/* Load (or create) profile */
-async function loadProfile(){
-  const {data:{user}}=await db.auth.getUser(); if(!user)return;
-  let {data, error}=await db.from('profiles').select('*').eq('id',user.id).single();
-  if(error&&error.code==='PGRST116'){
-    await db.from('profiles').insert({id:user.id,full_name:user.email});
-    data={full_name:user.email};
-  }
-// update welcome & crew / project once we have the data
-document.getElementById('welcome-text').textContent =
-  `Welcome back, ${data.full_name}`;
-
-document.getElementById('crew-info').textContent =
-  `Crew: ${data.crew  ?? '—'} | Project: ${data.project ?? '—'}`;
-
-  }
-  document.querySelector('.welcome-text').textContent=`Welcome back, ${data.full_name}`;
-  document.getElementById('crew-info').textContent=
-        `Crew: ${data.crew??'—'} | Project: ${data.project??'—'}`;
-}
-
-/* --------------  DASHBOARD + FORM JS  -------------- */
-/*  (all your existing JS: projectScores, dashboardData, updateDashboard,
-    selectScale, selectStatus, grabTags, submitCheckin, refreshDashboard, etc.)
-    Paste those functions here exactly as they were – nothing removed.         */
-
+  // ─── Handle Enter key on email input ──────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('email-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMagicLink();
+    });
+  });
 </script>
 </body>
 </html>

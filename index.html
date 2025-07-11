@@ -2,19 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
   <title>Jobsite Daily Check-in</title>
 
   <!-- ─── CSS ─────────────────────────────────────────────────────────── -->
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#f5f6fa; color:#2c3e50; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      background:#f5f6fa; color:#2c3e50;
+      min-height:100vh;
+    }
     h1,h2,p { margin-bottom:16px; }
     .screen { display:none; }
     .screen.active { display:block; }
 
     /* ── Login Screen ─────────────────────────────────────────── */
-    #login-screen { height:100vh; display:flex; align-items:center; justify-content:center; }
+    #login-screen {
+      height:100vh;
+      display:flex; align-items:center; justify-content:center;
+    }
     .login-box {
       text-align:center;
       width:90%; max-width:460px;
@@ -24,41 +34,42 @@
       box-shadow:0 4px 20px rgba(0,0,0,0.1);
     }
     .scale-strip { display:flex; gap:8px; justify-content:center; margin-bottom:32px; }
-    .scale-strip .bar { flex:1; height:8px; border-radius:4px; }
+    .bar { flex:1; height:8px; border-radius:4px; }
     .bar.red    { background:#e74c3c; }
     .bar.orange { background:#e67e22; }
     .bar.yellow { background:#f1c40f; }
     .bar.green  { background:#27ae60; }
 
-    #login-screen input, #login-screen button {
-      width:100%; height:56px; font-size:18px; border-radius:12px; }
     #login-screen input {
-      padding:0 16px; border:2px solid #ccc;
+      width:100%; height:56px; padding:0 16px; font-size:18px;
+      border:2px solid #ccc; border-radius:12px;
     }
     #login-screen button {
       margin-top:16px;
-      background:#1c90e4; color:white; border:none; cursor:pointer;
+      width:100%; height:56px; font-size:18px;
+      border:none; border-radius:12px;
+      background:#1c90e4; color:white; cursor:pointer;
     }
 
     /* ── Shared Container ─────────────────────────────────────── */
     .container {
       max-width:500px; margin:0 auto;
-      background:white; min-height:100vh;
-      box-shadow:0 0 20px rgba(0,0,0,0.1);
+      background:white; box-shadow:0 0 20px rgba(0,0,0,0.1);
+      min-height:100vh;
     }
 
     /* ── Dashboard ───────────────────────────────────────────── */
-    .dashboard-header { position:relative; background:#2c3e50; color:white; padding:30px 20px; }
-    .logout-button {
-      position:absolute; top:20px; right:20px;
-      background:white; color:#2c3e50; border:none; border-radius:6px;
-      padding:8px 12px; cursor:pointer; font-size:14px;
+    .dashboard-header {
+      background:#2c3e50; color:white;
+      padding:30px 20px; position:relative;
     }
-    .welcome-text { font-size:28px; font-weight:600; margin-bottom:8px; }
-    .dashboard-subtitle { font-size:18px; opacity:0.9; margin-bottom:5px; }
+    .welcome-text { font-size:28px; font-weight:600; }
+    .dashboard-subtitle { font-size:18px; opacity:0.9; }
     .crew-info { font-size:16px; opacity:0.8; }
     .metrics-grid {
-      display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:20px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px; padding:20px;
     }
     .metric-card {
       background:white; padding:25px; border-radius:16px;
@@ -68,8 +79,10 @@
     .metric-label  { font-size:16px; color:#7f8c8d; font-weight:500; }
 
     /* Team status & performance override */
-    .team-status-card .metric-number, .team-status-card .metric-label,
-    .performance-card .metric-number, .performance-card .metric-label {
+    .team-status-card .metric-number,
+    .team-status-card .metric-label,
+    .performance-card .metric-number,
+    .performance-card .metric-label {
       color:white;
     }
     .team-status-card.status-green  { background:#27ae60; }
@@ -90,19 +103,37 @@
       border:none; border-radius:12px; font-size:18px;
       font-weight:600; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.2);
     }
-    .check-in-button:active { background:#2980b9; transform:translateX(-50%) scale(0.98); }
+    .check-in-button:active {
+      background:#2980b9; transform:translateX(-50%) scale(0.98);
+    }
+
+    /* Logout button */
+    #logout-button {
+      position:absolute; top:20px; right:20px;
+      padding:8px 16px; background:white; color:#2c3e50;
+      border:none; border-radius:8px; font-weight:600;
+      cursor:pointer; display:none;
+    }
+    #logout-button.active {
+      display:block;
+    }
 
     /* ── Check-in Form ───────────────────────────────────────── */
-    .header { background:#2c3e50; color:white; padding:20px; text-align:center; position:relative; }
+    .header {
+      background:#2c3e50; color:white;
+      padding:20px; text-align:center; position:relative;
+    }
     .header h1 { font-size:24px; }
     .form-section { padding:20px; }
+
     .section-title {
       font-size:18px; font-weight:600; color:#2c3e50;
       margin-bottom:20px; border-bottom:2px solid #e9ecef;
       display:flex; justify-content:space-between; align-items:center;
     }
     .performance-score-display {
-      padding:8px 16px; border-radius:8px; font-size:20px; font-weight:700; color:white;
+      padding:8px 16px; border-radius:8px; font-size:20px;
+      font-weight:700; color:white;
     }
     .performance-score-display.score-1 { background:#e74c3c; }
     .performance-score-display.score-2 { background:#e67e22; }
@@ -112,79 +143,112 @@
 
     .metric-group { margin-bottom:30px; }
     .metric-label { font-size:16px; font-weight:500; color:#495057; margin-bottom:12px; }
+
     .button-scale {
-      display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:5px;
+      display:grid; grid-template-columns:repeat(5,1fr);
+      gap:8px; margin-bottom:5px;
     }
     .scale-button {
-      height:60px; border:2px solid transparent; border-radius:12px;
-      font-size:14px; font-weight:600; color:white; cursor:pointer;
-      display:flex; align-items:center; justify-content:center; transition:all .2s;
+      height:60px; border:2px solid transparent;
+      border-radius:12px; font-size:14px; font-weight:600;
+      color:white; cursor:pointer; display:flex;
+      align-items:center; justify-content:center;
       text-shadow:0 1px 2px rgba(0,0,0,0.2);
-    }
-    .scale-button.selected {
-      border-color:#2c3e50; box-shadow:0 0 0 3px rgba(44,62,80,0.2);
+      transition:all .2s;
     }
     .scale-button.scale-1 { background:#e74c3c; }
     .scale-button.scale-2 { background:#e67e22; }
     .scale-button.scale-3 { background:#f1c40f; }
     .scale-button.scale-4 { background:#27ae60; }
     .scale-button.scale-5 { background:#3498db; }
-
-    .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
-    .status-button {
-      height:80px; border:3px solid transparent; border-radius:16px;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:5px; font-size:16px; font-weight:600; cursor:pointer; color:white;
-      text-shadow:0 1px 2px rgba(0,0,0,0.2); transition:all .2s;
+    .scale-button.selected {
+      border-color:#2c3e50;
+      box-shadow:0 0 0 3px rgba(44,62,80,0.2);
     }
-    .status-button.selected { border-color:#2c3e50; box-shadow:0 0 0 4px rgba(44,62,80,0.2); }
+
+    .status-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:12px; margin-bottom:20px;
+    }
+    .status-button {
+      height:80px; border:3px solid transparent;
+      border-radius:16px; display:flex;
+      flex-direction:column; align-items:center;
+      justify-content:center; gap:5px;
+      font-size:16px; font-weight:600; color:white;
+      text-shadow:0 1px 2px rgba(0,0,0,0.2);
+      transition:all .2s; cursor:pointer;
+    }
     .status-button.status-green  { background:#27ae60; }
     .status-button.status-yellow { background:#f1c40f; }
     .status-button.status-orange { background:#e67e22; }
     .status-button.status-red    { background:#e74c3c; }
+    .status-button.selected {
+      border-color:#2c3e50;
+      box-shadow:0 0 0 4px rgba(44,62,80,0.2);
+    }
 
     .follow-up {
       background:#f8f9fa; border-left:4px solid #3498db;
-      border-radius:12px; padding:15px; margin-top:12px; display:none;
+      border-radius:12px; padding:15px; margin-top:12px;
+      display:none;
     }
     .follow-up.show { display:block; }
     .option-chip {
-      padding:8px 16px; background:white; border:2px solid #dee2e6;
-      border-radius:20px; display:inline-flex; align-items:center; gap:6px;
+      padding:8px 16px; background:white;
+      border:2px solid #dee2e6; border-radius:20px;
+      display:inline-flex; align-items:center; gap:6px;
       cursor:pointer; transition:all .2s;
     }
-    .option-chip.selected { background:#3498db; color:white; border-color:#3498db; }
+    .option-chip.selected {
+      background:#3498db; color:white; border-color:#3498db;
+    }
 
-    .comments-box { width:100%; min-height:80px; padding:12px; border:2px solid #dee2e6; border-radius:8px; resize:vertical; }
-    .submit-section { padding:20px; background:#f8f9fa; border-top:1px solid #dee2e6; position:sticky; bottom:0; }
+    .comments-box {
+      width:100%; min-height:80px; padding:12px;
+      border:2px solid #dee2e6; border-radius:8px; resize:vertical;
+    }
+    .submit-section {
+      padding:20px; background:#f8f9fa;
+      border-top:1px solid #dee2e6; position:sticky; bottom:0;
+    }
     .submit-button {
-      width:100%; padding:16px; background:#3498db; color:white; border:none; border-radius:12px;
-      font-size:18px; font-weight:600; cursor:pointer; transition:all .2s;
+      width:100%; padding:16px; background:#3498db; color:white;
+      border:none; border-radius:12px;
+      font-size:18px; font-weight:600; cursor:pointer;
+      transition:all .2s;
     }
     .submit-button:active { background:#2980b9; }
     .back-button {
-      position:absolute; top:15px; left:15px; width:36px; height:36px;
-      border:none; border-radius:50%; background:rgba(255,255,255,0.2);
-      color:white; font-size:20px; cursor:pointer; display:flex;
-      align-items:center; justify-content:center; transition:all .2s;
+      position:absolute; top:15px; left:15px;
+      width:36px; height:36px; border:none; border-radius:50%;
+      background:rgba(255,255,255,0.2); color:white; font-size:20px;
+      cursor:pointer; display:flex; align-items:center;
+      justify-content:center; transition:all .2s;
     }
     .back-button:hover { background:rgba(255,255,255,0.3); }
-    .progress-bar { height:4px; background:#e9ecef; overflow:hidden; margin-bottom:20px; }
-    .progress-fill { height:100%; background:#3498db; transition:width .3s; }
+    .progress-bar {
+      height:4px; background:#e9ecef; overflow:hidden;
+      margin-bottom:20px;
+    }
+    .progress-fill {
+      height:100%; background:#3498db;
+      transition:width .3s;
+    }
   </style>
 
-  <!-- ─── Supabase SDK ──────────────────────────────────────────────────── -->
+  <!-- ─── Supabase SDK (must come before any code that uses it) ─── -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ─── Initialize Supabase client ───────────────────────────────────────
+    // ─── Initialize Supabase client ─────────────────────────
     const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
-    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   </script>
 </head>
 
 <body>
-  <!-- ─── LOGIN SCREEN ─────────────────────────────────────────────── -->
+  <!-- ─── LOGIN SCREEN ───────────────────────────────────────── -->
   <div id="login-screen" class="screen active">
     <div class="login-box">
       <div class="scale-strip">
@@ -200,12 +264,12 @@
     </div>
   </div>
 
-  <!-- ─── DASHBOARD SCREEN ───────────────────────────────────────── -->
+  <!-- ─── DASHBOARD SCREEN ───────────────────────────────────── -->
   <div id="dashboard-screen" class="screen">
+    <button id="logout-button" onclick="logout()">Log out</button>
     <div class="container">
       <div class="dashboard-header">
-        <h1 class="welcome-text">Welcome back, User</h1>
-        <button class="logout-button" onclick="logout()">Log out</button>
+        <h1 class="welcome-text">Welcome back, —</h1>
         <div class="dashboard-subtitle">Jobsite Dashboard</div>
         <div class="crew-info">Crew: — | Project: —</div>
       </div>
@@ -223,16 +287,21 @@
           <div class="metric-number" id="green-days">0</div>
           <div class="metric-label">Team Green Days</div>
         </div>
-        <div class="metric-card performance-card score-3" id="performance-card" data-last-score="3">
+        <div
+          class="metric-card performance-card score-3"
+          id="performance-card"
+        >
           <div class="metric-number" id="performance-score">3.0</div>
           <div class="metric-label">Project Performance Score</div>
         </div>
       </div>
-      <button class="check-in-button" onclick="showCheckinForm()">Start Daily Check-in</button>
+      <button class="check-in-button" onclick="showCheckinForm()">
+        Start Daily Check-in
+      </button>
     </div>
   </div>
 
-  <!-- ─── CHECK-IN FORM SCREEN ─────────────────────────────────────── -->
+  <!-- ─── CHECK-IN FORM SCREEN ───────────────────────────────── -->
   <div id="checkin-screen" class="screen">
     <div class="container">
       <div class="header">
@@ -241,56 +310,133 @@
         <p>2.5-minute leadership effectiveness tracker</p>
       </div>
       <div class="form-section">
-        <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:0%"></div>
+        </div>
         <!-- Team Status -->
         <h2 class="section-title">👥 Team Status</h2>
         <div class="metric-group">
           <label class="metric-label">How's your crew today?</label>
           <div class="status-grid">
-            <button class="status-button status-green" onclick="selectStatus(this,'green')"><span class="emoji">💪</span><span>Energized & Connected</span></button>
-            <button class="status-button status-yellow" onclick="selectStatus(this,'yellow')"><span class="emoji">👍</span><span>Managing OK</span></button>
-            <button class="status-button status-orange" onclick="selectStatus(this,'orange')"><span class="emoji">😐</span><span>Some Struggling</span></button>
-            <button class="status-button status-red" onclick="selectStatus(this,'red')"><span class="emoji">🆘</span><span>Need Support</span></button>
+            <button
+              class="status-button status-green"
+              onclick="selectStatus(this,'green')"
+            >
+              <span class="emoji">💪</span><span>Energized & Connected</span>
+            </button>
+            <button
+              class="status-button status-yellow"
+              onclick="selectStatus(this,'yellow')"
+            >
+              <span class="emoji">👍</span><span>Managing OK</span>
+            </button>
+            <button
+              class="status-button status-orange"
+              onclick="selectStatus(this,'orange')"
+            >
+              <span class="emoji">😐</span><span>Some Struggling</span>
+            </button>
+            <button
+              class="status-button status-red"
+              onclick="selectStatus(this,'red')"
+            >
+              <span class="emoji">🆘</span><span>Need Support</span>
+            </button>
           </div>
           <div id="team-followup" class="follow-up">
-            <label class="follow-up-label">🎯 What's affecting your team?</label>
+            <label class="follow-up-label"
+              >🎯 What's affecting your team?</label
+            >
             <div>
-              <span class="option-chip" onclick="selectChip(this)">💪 Physical</span>
-              <span class="option-chip" onclick="selectChip(this)">🧠 Mental</span>
-              <span class="option-chip" onclick="selectChip(this)">❤️ Emotional</span>
-              <span class="option-chip" onclick="selectChip(this)">🤝 Team</span>
-              <span class="option-chip" onclick="selectChip(this)">🎯 Purpose</span>
+              <span class="option-chip" onclick="selectChip(this)"
+                >💪 Physical</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🧠 Mental</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >❤️ Emotional</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🤝 Team</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🎯 Purpose</span
+              >
             </div>
           </div>
         </div>
         <div class="comments-section">
-          <textarea id="team-comments" class="comments-box" placeholder="Any team observations…"></textarea>
+          <textarea
+            id="team-comments"
+            class="comments-box"
+            placeholder="Any team observations…"
+          ></textarea>
         </div>
 
         <!-- Project Status -->
         <h2 class="section-title">
           📊 Project Status
-          <span id="live-performance-score" class="performance-score-display score-3">3.0</span>
+          <span
+            id="live-performance-score"
+            class="performance-score-display score-3"
+            >3.0</span
+          >
         </h2>
+
         <!-- Productivity -->
         <div class="metric-group">
-          <label class="metric-label">Productivity vs expectations?</label>
+          <label class="metric-label"
+            >Productivity vs expectations?</label
+          >
           <div class="button-scale">
-            <button class="scale-button scale-1" onclick="selectScale(this,'prod',1)">1</button>
-            <button class="scale-button scale-2" onclick="selectScale(this,'prod',2)">2</button>
-            <button class="scale-button scale-3 selected" onclick="selectScale(this,'prod',3)">3</button>
-            <button class="scale-button scale-4" onclick="selectScale(this,'prod',4)">4</button>
-            <button class="scale-button scale-5" onclick="selectScale(this,'prod',5)">5</button>
+            <button
+              class="scale-button scale-1"
+              onclick="selectScale(this,'prod',1)"
+              >1</button
+            >
+            <button
+              class="scale-button scale-2"
+              onclick="selectScale(this,'prod',2)"
+              >2</button
+            >
+            <button
+              class="scale-button scale-3 selected"
+              onclick="selectScale(this,'prod',3)"
+              >3</button
+            >
+            <button
+              class="scale-button scale-4"
+              onclick="selectScale(this,'prod',4)"
+              >4</button
+            >
+            <button
+              class="scale-button scale-5"
+              onclick="selectScale(this,'prod',5)"
+              >5</button
+            >
           </div>
           <div id="prod-followup" class="follow-up">
             <label class="follow-up-label">📉 What slowed you down?</label>
             <div>
-              <span class="option-chip" onclick="selectChip(this)">📦 Materials</span>
-              <span class="option-chip" onclick="selectChip(this)">🌧️ Weather</span>
-              <span class="option-chip" onclick="selectChip(this)">🔧 Equipment</span>
-              <span class="option-chip" onclick="selectChip(this)">🤝 Coordination</span>
-              <span class="option-chip" onclick="selectChip(this)">📋 Permits</span>
-              <span class="option-chip" onclick="selectChip(this)">👷 Manpower</span>
+              <span class="option-chip" onclick="selectChip(this)"
+                >📦 Materials</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🌧️ Weather</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🔧 Equipment</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🤝 Coordination</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >📋 Permits</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >👷 Manpower</span
+              >
             </div>
           </div>
         </div>
@@ -299,20 +445,52 @@
         <div class="metric-group">
           <label class="metric-label">Flow from morning briefing?</label>
           <div class="button-scale">
-            <button class="scale-button scale-1" onclick="selectScale(this,'clarity',1)">1</button>
-            <button class="scale-button scale-2" onclick="selectScale(this,'clarity',2)">2</button>
-            <button class="scale-button scale-3 selected" onclick="selectScale(this,'clarity',3)">3</button>
-            <button class="scale-button scale-4" onclick="selectScale(this,'clarity',4)">4</button>
-            <button class="scale-button scale-5" onclick="selectScale(this,'clarity',5)">5</button>
+            <button
+              class="scale-button scale-1"
+              onclick="selectScale(this,'clarity',1)"
+              >1</button
+            >
+            <button
+              class="scale-button scale-2"
+              onclick="selectScale(this,'clarity',2)"
+              >2</button
+            >
+            <button
+              class="scale-button scale-3 selected"
+              onclick="selectScale(this,'clarity',3)"
+              >3</button
+            >
+            <button
+              class="scale-button scale-4"
+              onclick="selectScale(this,'clarity',4)"
+              >4</button
+            >
+            <button
+              class="scale-button scale-5"
+              onclick="selectScale(this,'clarity',5)"
+              >5</button
+            >
           </div>
           <div id="clarity-followup" class="follow-up">
-            <label class="follow-up-label">💭 What would improve it?</label>
+            <label class="follow-up-label"
+              >💭 What would improve it?</label
+            >
             <div>
-              <span class="option-chip" onclick="selectChip(this)">📊 Visual aids</span>
-              <span class="option-chip" onclick="selectChip(this)">⏰ More time</span>
-              <span class="option-chip" onclick="selectChip(this)">📐 Better drawings</span>
-              <span class="option-chip" onclick="selectChip(this)">❓ Q&A time</span>
-              <span class="option-chip" onclick="selectChip(this)">🔄 Clearer sequence</span>
+              <span class="option-chip" onclick="selectChip(this)"
+                >📊 Visual aids</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >⏰ More time</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >📐 Better drawings</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >❓ Q&A time</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🔄 Clearer sequence</span
+              >
             </div>
           </div>
         </div>
@@ -321,19 +499,49 @@
         <div class="metric-group">
           <label class="metric-label">Issue resolution speed?</label>
           <div class="button-scale">
-            <button class="scale-button scale-1" onclick="selectScale(this,'resolve',1)">1</button>
-            <button class="scale-button scale-2" onclick="selectScale(this,'resolve',2)">2</button>
-            <button class="scale-button scale-3 selected" onclick="selectScale(this,'resolve',3)">3</button>
-            <button class="scale-button scale-4" onclick="selectScale(this,'resolve',4)">4</button>
-            <button class="scale-button scale-5" onclick="selectScale(this,'resolve',5)">5</button>
+            <button
+              class="scale-button scale-1"
+              onclick="selectScale(this,'resolve',1)"
+              >1</button
+            >
+            <button
+              class="scale-button scale-2"
+              onclick="selectScale(this,'resolve',2)"
+              >2</button
+            >
+            <button
+              class="scale-button scale-3 selected"
+              onclick="selectScale(this,'resolve',3)"
+              >3</button
+            >
+            <button
+              class="scale-button scale-4"
+              onclick="selectScale(this,'resolve',4)"
+              >4</button
+            >
+            <button
+              class="scale-button scale-5"
+              onclick="selectScale(this,'resolve',5)"
+              >5</button
+            >
           </div>
           <div id="resolve-followup" class="follow-up">
-            <label class="follow-up-label">⏱️ What slowed your response?</label>
+            <label class="follow-up-label"
+              >⏱️ What slowed your response?</label
+            >
             <div>
-              <span class="option-chip" onclick="selectChip(this)">📱 Decision-makers</span>
-              <span class="option-chip" onclick="selectChip(this)">🔍 Unclear solution</span>
-              <span class="option-chip" onclick="selectChip(this)">🚫 Lacked authority</span>
-              <span class="option-chip" onclick="selectChip(this)">⏳ Waiting on others</span>
+              <span class="option-chip" onclick="selectChip(this)"
+                >📱 Decision-makers</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🔍 Unclear solution</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🚫 Lacked authority</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >⏳ Waiting on others</span
+              >
             </div>
           </div>
         </div>
@@ -342,29 +550,65 @@
         <div class="metric-group">
           <label class="metric-label">Safety engagement?</label>
           <div class="button-scale">
-            <button class="scale-button scale-1" onclick="selectScale(this,'safety',1)">1</button>
-            <button class="scale-button scale-2" onclick="selectScale(this,'safety',2)">2</button>
-            <button class="scale-button scale-3 selected" onclick="selectScale(this,'safety',3)">3</button>
-            <button class="scale-button scale-4" onclick="selectScale(this,'safety',4)">4</button>
-            <button class="scale-button scale-5" onclick="selectScale(this,'safety',5)">5</button>
+            <button
+              class="scale-button scale-1"
+              onclick="selectScale(this,'safety',1)"
+              >1</button
+            >
+            <button
+              class="scale-button scale-2"
+              onclick="selectScale(this,'safety',2)"
+              >2</button
+            >
+            <button
+              class="scale-button scale-3 selected"
+              onclick="selectScale(this,'safety',3)"
+              >3</button
+            >
+            <button
+              class="scale-button scale-4"
+              onclick="selectScale(this,'safety',4)"
+              >4</button
+            >
+            <button
+              class="scale-button scale-5"
+              onclick="selectScale(this,'safety',5)"
+              >5</button
+            >
           </div>
           <div id="safety-followup" class="follow-up">
-            <label class="follow-up-label">⚠️ What prevented more?</label>
+            <label class="follow-up-label"
+              >⚠️ What prevented more?</label
+            >
             <div>
-              <span class="option-chip" onclick="selectChip(this)">⏰ Time pressure</span>
-              <span class="option-chip" onclick="selectChip(this)">🔥 Other priorities</span>
-              <span class="option-chip" onclick="selectChip(this)">✅ No issues</span>
-              <span class="option-chip" onclick="selectChip(this)">😴 Team fatigue</span>
+              <span class="option-chip" onclick="selectChip(this)"
+                >⏰ Time pressure</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >🔥 Other priorities</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >✅ No issues</span
+              >
+              <span class="option-chip" onclick="selectChip(this)"
+                >😴 Team fatigue</span
+              >
             </div>
           </div>
         </div>
 
         <div class="comments-section">
-          <textarea id="project-comments" class="comments-box" placeholder="Any other observations…"></textarea>
+          <textarea
+            id="project-comments"
+            class="comments-box"
+            placeholder="Any other observations…"
+          ></textarea>
         </div>
 
         <div class="submit-section">
-          <button class="submit-button" onclick="submitCheckin()">Submit Daily Check-in</button>
+          <button class="submit-button" onclick="submitCheckin()">
+            Submit Daily Check-in
+          </button>
         </div>
       </div>
     </div>
@@ -372,41 +616,42 @@
 
   <!-- ─── ALL JAVASCRIPT ─────────────────────────────────────────── -->
   <script>
-    // ─── Handle magic-link callback ───────────────────────────────
+    // ─── Handle magic-link callback & initial session check ─────
     (async () => {
-      if (window.location.hash.includes('access_token')) {
-        const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      const hash = window.location.hash;
+      if (hash.includes('access_token') || hash.includes('refresh_token')) {
+        const { data: { session }, error } =
+          await supabase.auth.getSessionFromUrl({ storeSession: true });
         if (error) console.error('Magic-link error:', error.message);
-        history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
+      // After storing, check current session
+      const { data: { session } } = await supabase.auth.getSession();
+      onAuthChange(session);
     })();
 
-    // ─── Initial auth state & listeners ──────────────────────────
-    document.addEventListener('DOMContentLoaded', async () => {
-      const { data:{ session } } = await supabase.auth.getSession();
-      handleAuthChange(session);
-      supabase.auth.onAuthStateChange((_, { session }) => {
-        handleAuthChange(session);
-      });
+    // ─── React to auth state changes ───────────────────────────
+    supabase.auth.onAuthStateChange((event, session) => {
+      onAuthChange(session);
     });
 
-    function handleAuthChange(session) {
-      const loggedIn = !!session?.user;
-      document.getElementById('login-screen').classList.toggle('active', !loggedIn);
-      document.getElementById('dashboard-screen').classList.toggle('active', loggedIn);
-      if (loggedIn) {
+    function onAuthChange(session) {
+      if (session && session.user) {
+        // show dashboard
+        document.getElementById('login-screen').classList.remove('active');
+        document.getElementById('dashboard-screen').classList.add('active');
+        document.getElementById('logout-button').classList.add('active');
         loadProfile();
         refreshDashboard();
       } else {
-        showLogin();
+        // show login
+        document.getElementById('dashboard-screen').classList.remove('active');
+        document.getElementById('logout-button').classList.remove('active');
+        document.getElementById('login-screen').classList.add('active');
       }
     }
 
-    function showLogin() {
-      document.getElementById('checkin-screen').classList.remove('active');
-    }
-
-    // ─── Send magic-link ──────────────────────────────────────────
+    // ─── Send magic-link to e-mail ─────────────────────────────
     async function sendMagicLink() {
       const email = document.getElementById('email-input').value.trim();
       if (!email) return alert('Please enter your work e-mail');
@@ -415,14 +660,16 @@
       alert('✅ Check your inbox for the magic link.');
     }
 
-    // ─── Logout ──────────────────────────────────────────────────
+    // ─── Log out ────────────────────────────────────────────────
     async function logout() {
       await supabase.auth.signOut();
     }
 
-    // ─── Load or create profile ──────────────────────────────────
+    // ─── Load or create user profile ───────────────────────────
     async function loadProfile() {
-      const { data:{ user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       let { data, error } = await supabase
         .from('profiles')
@@ -434,150 +681,47 @@
           id: user.id,
           full_name: user.email,
           crew: null,
-          project: null
+          project: null,
         });
-        data = { full_name: user.email, crew:null, project:null };
+        data = { full_name: user.email, crew: null, project: null };
       }
-      document.querySelector('.welcome-text').textContent = `Welcome back, ${data.full_name}`;
+      document.querySelector('.welcome-text').textContent =
+        `Welcome back, ${data.full_name}`;
       document.querySelector('.crew-info').textContent =
-        `Crew: ${data.crew ?? '—'} | Project: ${data.project ?? '—'}`;
+        `Crew: ${data.crew || '—'} | Project: ${data.project || '—'}`;
     }
 
-    // ─── State & helpers ─────────────────────────────────────────
-    let projectScores = { prod:3, clarity:3, resolve:3, safety:3 };
-    let dashboardData  = { todayStatus:null, todayStatusText:null, todayStatusEmoji:null };
-    window._allRows = [];
+    // ─── State & helpers ───────────────────────────────────────
+    let projectScores = { prod: 3, clarity: 3, resolve: 3, safety: 3 };
+    let dashboardData = { todayStatus: null, todayStatusText: null, todayStatusEmoji: null };
 
     function calculatePerformanceScore() {
-      const s = 0.35*projectScores.prod + 0.25*projectScores.clarity
-              + 0.20*projectScores.resolve + 0.20*projectScores.safety;
+      const s =
+        0.35 * projectScores.prod +
+        0.25 * projectScores.clarity +
+        0.20 * projectScores.resolve +
+        0.20 * projectScores.safety;
       return Math.min(5, Math.max(1, s));
     }
 
-    function updateDashboardUI() {
-      // totals
-      document.getElementById('total-checkins').textContent = window._allRows.length;
+    function updateDashboardUI(allRows) {
+      // total + green days
+      document.getElementById('total-checkins').textContent = allRows.length;
       document.getElementById('green-days').textContent =
-        window._allRows.filter(r=>r.team_status==='green').length;
+        allRows.filter(r => r.team_status === 'green').length;
 
-      // performance card
+      // perf card
       const score = calculatePerformanceScore();
       const perfCard = document.getElementById('performance-card');
       document.getElementById('performance-score').textContent = score.toFixed(1);
-      perfCard.classList.replace(
-        `score-${perfCard.dataset.lastScore}`,
-        `score-${Math.round(score)}`
+      perfCard.classList.remove(
+        'score-1','score-2','score-3','score-4','score-5'
       );
-      perfCard.dataset.lastScore = Math.round(score);
+      perfCard.classList.add(`score-${Math.round(score)}`);
 
       // team status card
-      const tsCard = document.getElementById('team-status-card');
-      tsCard.classList.remove('status-green','status-yellow','status-orange','status-red');
       if (dashboardData.todayStatus) {
+        const tsCard = document.getElementById('team-status-card');
+        tsCard.classList.remove('status-green','status-yellow','status-orange','status-red');
         tsCard.classList.add(`status-${dashboardData.todayStatus}`);
-        document.getElementById('team-status-text').textContent = dashboardData.todayStatusText;
-        document.getElementById('team-status-emoji').textContent = dashboardData.todayStatusEmoji;
-      }
-    }
-
-    // ─── Refresh Dashboard ────────────────────────────────────────
-    async function refreshDashboard() {
-      const { data, error } = await supabase.from('checkins').select('*');
-      if (error) return console.error(error);
-      window._allRows = data || [];
-      const last = window._allRows.at(-1);
-      if (last) {
-        dashboardData.todayStatus      = last.team_status;
-        dashboardData.todayStatusText  = {
-          green:'Energized & Connected',
-          yellow:'Managing OK',
-          orange:'Some Struggling',
-          red:'Need Support'
-        }[last.team_status];
-        dashboardData.todayStatusEmoji = {
-          green:'💪', yellow:'👍', orange:'😐', red:'🆘'
-        }[last.team_status];
-        projectScores = {
-          prod:last.prod,
-          clarity:last.clarity,
-          resolve:last.resolve,
-          safety:last.safety
-        };
-      }
-      updateDashboardUI();
-    }
-
-    // ─── Submit Check-in ──────────────────────────────────────────
-    async function submitCheckin() {
-      const { data:{ user } } = await supabase.auth.getUser();
-      if (!user) return alert('You must be signed in.');
-      const payload = {
-        user_id: user.id,
-        team_status: dashboardData.todayStatus,
-        team_tags: Array.from(document.querySelectorAll('#team-followup .option-chip.selected')).map(c=>c.textContent),
-        team_comment: document.getElementById('team-comments').value,
-        prod: projectScores.prod,
-        clarity: projectScores.clarity,
-        resolve: projectScores.resolve,
-        safety: projectScores.safety,
-        prod_tags: Array.from(document.querySelectorAll('#prod-followup .option-chip.selected')).map(c=>c.textContent),
-        clarity_tags: Array.from(document.querySelectorAll('#clarity-followup .option-chip.selected')).map(c=>c.textContent),
-        resolve_tags: Array.from(document.querySelectorAll('#resolve-followup .option-chip.selected')).map(c=>c.textContent),
-        safety_tags: Array.from(document.querySelectorAll('#safety-followup .option-chip.selected')).map(c=>c.textContent),
-        project_comment: document.getElementById('project-comments').value
-      };
-      const { error } = await supabase.from('checkins').insert(payload);
-      if (error) return alert('Error saving check-in:\n'+error.message);
-      await refreshDashboard();
-      showDashboard();
-      resetForm();
-    }
-
-    // ─── UI Helpers ──────────────────────────────────────────────
-    function showCheckinForm() {
-      document.getElementById('dashboard-screen').classList.remove('active');
-      document.getElementById('checkin-screen').classList.add('active');
-    }
-    function showDashboard() {
-      document.getElementById('checkin-screen').classList.remove('active');
-      document.getElementById('dashboard-screen').classList.add('active');
-    }
-    function selectStatus(btn,status) {
-      btn.closest('.status-grid').querySelectorAll('.status-button').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      dashboardData.todayStatus = status;
-      const textMap  = {green:'Energized & Connected', yellow:'Managing OK', orange:'Some Struggling', red:'Need Support'};
-      const emojiMap = {green:'💪', yellow:'👍', orange:'😐', red:'🆘'};
-      dashboardData.todayStatusText  = textMap[status];
-      dashboardData.todayStatusEmoji = emojiMap[status];
-      document.getElementById('team-followup').classList.toggle('show', status==='orange'||status==='red');
-    }
-    function selectScale(btn,metric,value) {
-      const group = btn.closest('.button-scale');
-      group.querySelectorAll('.scale-button').forEach(b=>b.classList.remove('selected'));
-      btn.classList.add('selected');
-      projectScores[metric] = value;
-      const live = document.getElementById('live-performance-score');
-      const score = calculatePerformanceScore();
-      live.textContent = score.toFixed(1);
-      live.className = `performance-score-display score-${Math.round(score)}`;
-      const follow = document.getElementById(`${metric}-followup`);
-      const show = metric==='prod'
-        ? (value<=2||value>=4)
-        : (value<=2);
-      follow.classList.toggle('show', show);
-      document.querySelector('.progress-fill').style.width =
-        ((Object.values(projectScores).filter(v=>v!=null).length)/4*100)+'%';
-    }
-    function selectChip(el) { el.classList.toggle('selected'); }
-    function resetForm() {
-      projectScores = {prod:3,clarity:3,resolve:3,safety:3};
-      document.querySelectorAll('.follow-up').forEach(div=>div.classList.remove('show'));
-      document.querySelectorAll('.option-chip.selected').forEach(c=>c.classList.remove('selected'));
-      document.querySelectorAll('textarea').forEach(t=>t.value='');
-      document.querySelectorAll('.status-button, .scale-button').forEach(b=>b.classList.remove('selected'));
-      document.querySelector('.progress-fill').style.width = '0%';
-    }
-  </script>
-</body>
-</html>
+        document.getElementBy

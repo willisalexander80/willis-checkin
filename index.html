@@ -1101,5 +1101,124 @@ updateProgress();
             if (teamStatusLabel) teamStatusLabel.style.color = '#7f8c8d';
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ─── Initialize Supabase client ─────────────────────────
+  const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ─── Handle magic-link callback ─────────────────────────
+  (async () => {
+    if (window.location.hash.includes('access_token')) {
+      const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      if (error) console.error('Magic-link error:', error.message);
+      // remove the token from URL
+      history.replaceState({}, document.title, window.location.pathname);
+    }
+  })();
+
+  // ─── Toggle screens when auth state changes ─────────────
+  supabase.auth.onAuthStateChange((_, session) => {
+    const loggedIn = !!session?.user;
+    document.getElementById('login-screen')   .classList.toggle('active', !loggedIn);
+    document.getElementById('dashboard-screen').classList.toggle('active',  loggedIn);
+    if (loggedIn) {
+      loadProfile();
+      refreshDashboard();
+    }
+  });
+
+  // ─── Send magic link to email ───────────────────────────
+  async function sendMagicLink() {
+    const email = document.getElementById('email-input').value.trim();
+    if (!email) return alert('Please enter your work e-mail');
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) return alert(error.message);
+    alert('✅ Check your inbox for the magic link.');
+  }
+
+  // ─── Load (or create) the user’s profile row ────────────
+  async function loadProfile() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    let { data, error } = await supabase
+      .from('profiles')
+      .select('full_name, crew, project')
+      .eq('id', user.id)
+      .single();
+
+    // If no profile yet, insert stub with e-mail as fallback name
+    if (error && error.code === 'PGRST116') {
+      await supabase.from('profiles').insert({
+        id: user.id,
+        full_name: user.email,
+        crew: null,
+        project: null
+      });
+      data = { full_name: user.email, crew: null, project: null };
+    }
+
+    // render into DOM
+    document.querySelector('.welcome-text').textContent =
+      `Welcome back, ${data.full_name}`;
+    document.querySelector('.crew-info').textContent =
+      `Crew: ${data.crew  ?? '—'} | Project: ${data.project ?? '—'}`;
+  }
+
+  // ─── Fetch all check-ins & update the dashboard UI ───────
+  async function refreshDashboard() {
+    const { data, error } = await supabase.from('checkins').select('*');
+    if (error) return console.error(error);
+
+    // aggregate numbers
+    const total     = data.length;
+    const greenDays = data.filter(r => r.team_status === 'green').length;
+    document.getElementById('total-checkins').textContent = total;
+    document.getElementById('green-days')     .textContent = greenDays;
+
+    // lift out the most recent row
+    const last = data.at(-1);
+    if (last) {
+      // set up our in-memory dashboardData
+      dashboardData.todayStatus      = last.team_status;
+      dashboardData.todayStatusText  = {
+        green: 'Energized & Connected',
+        yellow:'Managing OK',
+        orange:'Some Struggling',
+        red:   'Need Support'
+      }[last.team_status];
+      dashboardData.todayStatusEmoji = { green:'💪', yellow:'👍', orange:'😐', red:'🆘' }[last.team_status];
+      projectScores = { prod:last.prod, clarity:last.clarity, resolve:last.resolve, safety:last.safety };
+    }
+
+    updateDashboard();
+  }
+
+  // ─── Send the filled-out check-in form to Supabase ──────
+  async function submitCheckin() {
+    const payload = {
+      team_status: dashboardData.todayStatus,
+      team_tags:   grabTags('team-followup'),
+      team_comment: document.getElementById('team-comments').value,
+      prod:    projectScores.prod,
+      clarity: projectScores.clarity,
+      resolve: projectScores.resolve,
+      safety:  projectScores.safety,
+      prod_tags:    grabTags('prod-followup'),
+      clarity_tags: grabTags('clarity-followup'),
+      resolve_tags: grabTags('resolve-followup'),
+      safety_tags:  grabTags('safety-followup'),
+      project_comment: document.getElementById('project-comments').value
+    };
+    const { error } = await supabase.from('checkins').insert(payload);
+    if (error) return alert('Error saving check-in:\n' + error.message);
+
+    await refreshDashboard();
+    showDashboard();
+    resetForm();
+  }
+</script>
+
 </body>
 </html>

@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>WILLIS Daily Check‑in</title>
+<link rel="icon" href="data:,">
 
 <!-- ‑‑‑ global/reset + colour / typography ‑‑‑ -->
 <style>
@@ -377,7 +378,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
 
     // Prompt for a friendly name if they haven't set one:
     if (!data.full_name || data.full_name === user.email) {
-      const name = prompt('What's your name? (e.g. John Smith)');
+      const name = prompt("What's your name? (e.g. John Smith)");
       if (name) {
         await db
           .from('profiles')

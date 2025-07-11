@@ -272,28 +272,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
   window.addEventListener('load', async () => {
     // Check if we're coming back from a magic link
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    if (hashParams.get('access_token')) {
-      // Let Supabase handle the session
-      const { data, error } = await db.auth.getSession();
-      if (!error && data.session) {
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    
+    if (accessToken && refreshToken) {
+      try {
+        // Manually set the session
+        const { data, error } = await db.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        
+        if (error) throw error;
+        
         // Clear the hash to avoid re-processing
         window.location.hash = '';
+        
+        // Force a refresh to ensure UI updates
+        if (data.session) {
+          await loadProfile();
+          await refreshDashboard();
+          
+          // Manually update screens if auth state change didn't fire
+          document.getElementById('login-screen').classList.remove('active');
+          document.getElementById('dashboard-screen').classList.add('active');
+        }
+      } catch (error) {
+        console.error('Error handling magic link:', error);
       }
     }
   });
 
   // ─── Screen toggle on auth change ─────────────────────────────
   db.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event, session);
+    
     const loggedIn = !!session?.user;
     document.getElementById('login-screen').classList.toggle('active', !loggedIn);
     document.getElementById('dashboard-screen').classList.toggle('active', loggedIn);
     document.getElementById('checkin-screen').classList.remove('active');
 
-    if (loggedIn) {
+    if (loggedIn && event !== 'SIGNED_OUT') {
       await loadProfile();
       await refreshDashboard();
     }
   });
+  
+  // Also check session on load
+  (async () => {
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      console.log('Existing session found:', session);
+      document.getElementById('login-screen').classList.remove('active');
+      document.getElementById('dashboard-screen').classList.add('active');
+      await loadProfile();
+      await refreshDashboard();
+    }
+  })();
 
   // ─── Send magic link ──────────────────────────────────────────
   async function sendMagicLink() {

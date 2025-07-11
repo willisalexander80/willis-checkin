@@ -166,13 +166,13 @@
     .progress-fill { height:100%; background:#3498db; transition:width .3s; }
   </style>
 
-  <!-- ─── Supabase SDK (must come before any code that uses `supabase`) ─── -->
+  <!-- ─── Supabase SDK (must come before any code that uses it) ─── -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ─── Initialize Supabase client ───────────────────────────────────────
     const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0bWNtaG11eGdsZGFqd2x3dGdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3MjM2NTksImV4cCI6MjA2NzI5OTY1OX0.jH08SM114bibZATgYDPlL1C5mL7-fOjN7rrCBpVExaY';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // **Never shadow** the `supabase` global; use a different name for your client:
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   </script>
 </head>
 
@@ -197,7 +197,7 @@
   <div id="dashboard-screen" class="screen">
     <div class="container">
       <div class="dashboard-header">
-        <h1 class="welcome-text">Welcome back, John</h1>
+        <h1 class="welcome-text">Welcome back, —</h1>
         <div class="dashboard-subtitle">Jobsite Dashboard</div>
         <div class="crew-info">Crew: — | Project: —</div>
       </div>
@@ -215,14 +215,12 @@
           <div class="metric-number" id="green-days">0</div>
           <div class="metric-label">Team Green Days</div>
         </div>
-        <div class="metric-card performance-card" id="performance-card">
+        <div class="metric-card performance-card" id="performance-card" data-last-score="3">
           <div class="metric-number" id="performance-score">3.0</div>
           <div class="metric-label">Project Performance Score</div>
         </div>
       </div>
-      <button class="check-in-button" onclick="showCheckinForm()">
-        Start Daily Check-in
-      </button>
+      <button class="check-in-button" onclick="showCheckinForm()">Start Daily Check-in</button>
     </div>
   </div>
 
@@ -232,12 +230,13 @@
       <div class="header">
         <button class="back-button" onclick="showDashboard()">←</button>
         <h1>WILLIS Daily Check-in</h1>
-        <p>2.5-minute leadership effectiveness tracker</p>
+        <p>2-minute leadership effectiveness tracker</p>
       </div>
       <div class="form-section">
         <div class="progress-bar">
           <div class="progress-fill" style="width:0%"></div>
         </div>
+
         <!-- Team Status -->
         <h2 class="section-title">👥 Team Status</h2>
         <div class="metric-group">
@@ -276,6 +275,7 @@
           📊 Project Status
           <span id="live-performance-score" class="performance-score-display score-3">3.0</span>
         </h2>
+
         <!-- Productivity -->
         <div class="metric-group">
           <label class="metric-label">Productivity vs expectations?</label>
@@ -316,7 +316,7 @@
               <span class="option-chip" onclick="selectChip(this)">⏰ More time</span>
               <span class="option-chip" onclick="selectChip(this)">📐 Better drawings</span>
               <span class="option-chip" onclick="selectChip(this)">❓ Q&A time</span>
-              <span class="option-chip" onclick="selectChip(this)">🔄 Clearer sequence</span>
+              <span class="option–chip" onclick="selectChip(this)">🔄 Clearer sequence</span>
             </div>
           </div>
         </div>
@@ -376,59 +376,59 @@
 
   <!-- ─── ALL JAVASCRIPT ─────────────────────────────────────────── -->
   <script>
-    // ─── Parse magic-link callback ────────────────────────────────
+    // 1️⃣ Parse magic-link callback
     (async () => {
       if (window.location.hash.includes('access_token')) {
-        const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+        const { error } = await supabaseClient.auth.getSessionFromUrl({ storeSession: true });
         if (error) console.error('Magic-link error:', error.message);
         history.replaceState({}, document.title, window.location.pathname);
       }
     })();
 
-    // ─── Toggle screens on auth changes ──────────────────────────
-    supabase.auth.onAuthStateChange((_, session) => {
-      const loggedIn = !!session?.user;
-      document.getElementById('login-screen')
-              .classList.toggle('active', !loggedIn);
-      document.getElementById('dashboard-screen')
-              .classList.toggle('active', loggedIn);
+    // 2️⃣ Toggle screens on auth change + initial load
+    async function checkLogin() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const loggedIn = !!session;
+      document.getElementById('login-screen').classList.toggle('active', !loggedIn);
+      document.getElementById('dashboard-screen').classList.toggle('active', loggedIn);
       if (loggedIn) {
-        loadProfile();
-        refreshDashboard();
+        await loadProfile();
+        await refreshDashboard();
       }
-    });
+    }
+    supabaseClient.auth.onAuthStateChange(checkLogin);
 
-    // ─── Send magic-link to e-mail ───────────────────────────────
+    // 3️⃣ Send magic link
     async function sendMagicLink() {
       const email = document.getElementById('email-input').value.trim();
       if (!email) return alert('Please enter your work e-mail');
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (error) alert(error.message); else alert('✅ Check your inbox.');
+      const { error } = await supabaseClient.auth.signInWithOtp({ email });
+      if (error) return alert(error.message);
+      alert('✅ Check your inbox for the magic link.');
     }
 
-    // ─── Load or create user profile ─────────────────────────────
+    // 4️⃣ Load or create user profile
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) return;
-      let { data, error } = await supabase
+      let { data, error } = await supabaseClient
         .from('profiles')
         .select('full_name, crew, project')
         .eq('id', user.id)
         .single();
-
       if (error && error.code === 'PGRST116') {
-        await supabase.from('profiles').insert({
+        await supabaseClient.from('profiles').insert({
           id: user.id,
           full_name: user.email,
-          crew: '', project: ''
+          crew: null,
+          project: null
         });
-        data = { full_name: user.email, crew:'', project:'' };
+        data = { full_name: user.email, crew: null, project: null };
       }
-
       document.querySelector('.welcome-text')
               .textContent = `Welcome back, ${data.full_name}`;
       document.querySelector('.crew-info')
-              .textContent = `Crew: ${data.crew || '—'} | Project: ${data.project || '—'}`;
+              .textContent = `Crew: ${data.crew  ?? '—'} | Project: ${data.project ?? '—'}`;
     }
 
     // ─── State & UI helpers ──────────────────────────────────────
@@ -436,8 +436,10 @@
     let dashboardData  = { todayStatus:null, todayStatusText:null, todayStatusEmoji:null };
 
     function calculatePerformanceScore() {
-      const s = 0.35*projectScores.prod + 0.25*projectScores.clarity
-              + 0.20*projectScores.resolve + 0.20*projectScores.safety;
+      const s = 0.35*projectScores.prod
+              + 0.25*projectScores.clarity
+              + 0.20*projectScores.resolve
+              + 0.20*projectScores.safety;
       return Math.min(5, Math.max(1, s));
     }
 
@@ -452,11 +454,10 @@
       const score = calculatePerformanceScore();
       const perfCard = document.getElementById('performance-card');
       document.getElementById('performance-score').textContent = score.toFixed(1);
-      perfCard.classList
-        .replace(
-          `score-${perfCard.dataset.lastScore||3}`,
-          `score-${Math.round(score)}`
-        );
+      perfCard.classList.replace(
+        `score-${perfCard.dataset.lastScore||3}`,
+        `score-${Math.round(score)}`
+      );
       perfCard.dataset.lastScore = Math.round(score);
 
       // team status
@@ -464,7 +465,7 @@
       if (dashboardData.todayStatus) {
         tsCard.classList.remove('status-green','status-yellow','status-orange','status-red');
         tsCard.classList.add(`status-${dashboardData.todayStatus}`);
-        document.getElementById('team-status-text').textContent = dashboardData.todayStatusText;
+        document.getElementById('team-status-text').textContent  = dashboardData.todayStatusText;
         document.getElementById('team-status-emoji').textContent = dashboardData.todayStatusEmoji;
       }
     }
@@ -472,7 +473,7 @@
     // ─── Refresh Dashboard from DB ────────────────────────────────
     window._allRows = [];
     async function refreshDashboard() {
-      const { data, error } = await supabase.from('checkins').select('*');
+      const { data, error } = await supabaseClient.from('checkins').select('*');
       if (error) return console.error(error);
       window._allRows = data;
 
@@ -485,34 +486,46 @@
           orange:'Some Struggling',
           red:'Need Support'
         }[last.team_status];
-        dashboardData.todayStatusEmoji = { green:'💪',yellow:'👍',orange:'😐',red:'🆘' }[last.team_status];
-        projectScores = { prod:last.prod, clarity:last.clarity, resolve:last.resolve, safety:last.safety };
+        dashboardData.todayStatusEmoji = {
+          green:'💪', yellow:'👍', orange:'😐', red:'🆘'
+        }[last.team_status];
+        projectScores = {
+          prod:last.prod,
+          clarity:last.clarity,
+          resolve:last.resolve,
+          safety:last.safety
+        };
       }
       updateDashboardUI();
     }
 
     // ─── Submit Check-in ──────────────────────────────────────────
     async function submitCheckin() {
-      const { data:{ user } } = await supabase.auth.getUser();
+      const { data:{ user } } = await supabaseClient.auth.getUser();
       if (!user) return alert('You must be signed in.');
+
+      const makeTags = id => Array.from(
+        document.querySelectorAll(`#${id} .option-chip.selected`)
+      ).map(c=>c.textContent.trim());
 
       const payload = {
         user_id: user.id,
-        team_status: dashboardData.todayStatus,
-        team_tags: Array.from(document.querySelectorAll('#team-followup .option-chip.selected')).map(c=>c.textContent),
-        team_comment: document.getElementById('team-comments').value,
-        prod: projectScores.prod,
-        clarity: projectScores.clarity,
-        resolve: projectScores.resolve,
-        safety: projectScores.safety,
-        prod_tags: Array.from(document.querySelectorAll('#prod-followup .option-chip.selected')).map(c=>c.textContent),
-        clarity_tags: Array.from(document.querySelectorAll('#clarity-followup .option-chip.selected')).map(c=>c.textContent),
-        resolve_tags: Array.from(document.querySelectorAll('#resolve-followup .option-chip.selected')).map(c=>c.textContent),
-        safety_tags: Array.from(document.querySelectorAll('#safety-followup .option-chip.selected')).map(c=>c.textContent),
+        team_status:   dashboardData.todayStatus,
+        team_tags:     makeTags('team-followup'),
+        team_comment:  document.getElementById('team-comments').value,
+        prod:          projectScores.prod,
+        clarity:       projectScores.clarity,
+        resolve:       projectScores.resolve,
+        safety:        projectScores.safety,
+        prod_tags:     makeTags('prod-followup'),
+        clarity_tags:  makeTags('clarity-followup'),
+        resolve_tags:  makeTags('resolve-followup'),
+        safety_tags:   makeTags('safety-followup'),
         project_comment: document.getElementById('project-comments').value
       };
-      const { error } = await supabase.from('checkins').insert(payload);
-      if (error) return alert('Error saving check-in:\n'+error.message);
+
+      const { error } = await supabaseClient.from('checkins').insert(payload);
+      if (error) return alert('Error saving check-in:\n' + error.message);
 
       await refreshDashboard();
       showDashboard();
@@ -522,50 +535,60 @@
     // ─── UI Helpers ──────────────────────────────────────────────
     function showCheckinForm() {
       document.getElementById('dashboard-screen').classList.remove('active');
-      document.getElementById('checkin-screen'  ).classList.add('active');
+      document.getElementById('checkin-screen').classList.add('active');
     }
     function showDashboard() {
-      document.getElementById('checkin-screen'  ).classList.remove('active');
+      document.getElementById('checkin-screen').classList.remove('active');
       document.getElementById('dashboard-screen').classList.add('active');
     }
     function selectStatus(btn,status) {
       btn.closest('.status-grid').querySelectorAll('.status-button').forEach(b=>b.classList.remove('selected'));
       btn.classList.add('selected');
       dashboardData.todayStatus = status;
-      const mapText = {
-        green:'Energized & Connected',
-        yellow:'Managing OK',
-        orange:'Some Struggling',
-        red:'Need Support'
-      };
-      const mapEmoji = { green:'💪',yellow:'👍',orange:'😐',red:'🆘' };
-      dashboardData.todayStatusText  = mapText[status];
-      dashboardData.todayStatusEmoji = mapEmoji[status];
+      const textMap  = { green:'Energized & Connected', yellow:'Managing OK', orange:'Some Struggling', red:'Need Support' };
+      const emoMap   = { green:'💪', yellow:'👍', orange:'😐', red:'🆘' };
+      dashboardData.todayStatusText  = textMap[status];
+      dashboardData.todayStatusEmoji = emoMap[status];
       document.getElementById('team-followup').classList.toggle('show', status==='orange'||status==='red');
     }
     function selectScale(btn,metric,value) {
       btn.closest('.button-scale').querySelectorAll('.scale-button').forEach(b=>b.classList.remove('selected'));
       btn.classList.add('selected');
-      projectScores[metric]=value;
-      document.getElementById('live-performance-score').textContent = calculatePerformanceScore().toFixed(1);
-      document.getElementById('live-performance-score').classList = `performance-score-display score-${Math.round(calculatePerformanceScore())}`;
+      projectScores[metric] = value;
+
+      // live performance update
+      const live = calculatePerformanceScore();
+      const disp = document.getElementById('live-performance-score');
+      disp.textContent = live.toFixed(1);
+      disp.className = `performance-score-display score-${Math.round(live)}`;
+
       // follow-ups
       const f = document.getElementById(`${metric}-followup`);
-      if (metric==='prod' && (value<=2||value>=4)) f.classList.add('show'); else if (metric!=='prod'&&value<=2) f.classList.add('show'); else f.classList.remove('show');
+      if ((metric==='prod' && (value<=2||value>=4)) || (metric!=='prod' && value<=2)) {
+        f.classList.add('show');
+      } else {
+        f.classList.remove('show');
+      }
+
+      // progress bar
+      const answered = document.querySelectorAll('.scale-button.selected, .status-button.selected').length;
+      document.querySelector('.progress-fill').style.width = `${(answered/5)*100}%`;
     }
     function selectChip(el) { el.classList.toggle('selected'); }
     function resetForm() {
-      projectScores={prod:3,clarity:3,resolve:3,safety:3};
-      document.querySelectorAll('.follow-up').forEach(div=>div.classList.remove('show'));
-      document.querySelectorAll('.option-chip.selected').forEach(ch=>ch.classList.remove('selected'));
+      projectScores = { prod:3, clarity:3, resolve:3, safety:3 };
+      dashboardData.todayStatus = null;
+      document.querySelectorAll('.follow-up').forEach(d=>d.classList.remove('show'));
+      document.querySelectorAll('.option-chip.selected').forEach(c=>c.classList.remove('selected'));
       document.querySelectorAll('textarea').forEach(t=>t.value='');
       document.querySelectorAll('.status-button, .scale-button').forEach(b=>b.classList.remove('selected'));
+      document.querySelector('.progress-fill').style.width = '0%';
     }
-    // initialize on load
-    document.addEventListener('DOMContentLoaded', () => {
-      refreshDashboard();
-    });
 
+    // ─── Kick everything off ─────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      checkLogin();
+    });
   </script>
 </body>
 </html>

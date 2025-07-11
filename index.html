@@ -100,7 +100,12 @@
         .performance-card .metric-label {
             color: white;
         }
-        
+        /* ── Ensure team-status text & emoji stay white on colored cards ── */
+.team-status-card .team-status-text,
+.team-status-card .team-status-emoji {
+  color: white !important;
+}
+
         /* Team Status Card Colors */
         .team-status-card.status-green {
             background: #27ae60 !important;

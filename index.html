@@ -193,8 +193,12 @@
     // ─── Handle magic-link callback & clean URL ─────────────────────────────────
     async function handleMagicLink() {
       if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
-        const { error } = await sb.auth.getSessionFromUrl({ storeSession: true });
-        if (error) console.error('Magic-link error:', error.message);
+        const { data, error } = await sb.auth.getSessionFromUrl({ storeSession: true });
+        if (error) {
+          console.error('Magic-link error:', error.message);
+        } else if (data.session) {
+          toggleScreens(true);
+        }
         history.replaceState({}, document.title, window.location.pathname);
       }
     }

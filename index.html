@@ -182,7 +182,7 @@
     // ─── Initialize Supabase client ─────────────────────────────────────────────
     const SUPABASE_URL = 'https://atmcmhmuxgldajwlwtga.supabase.co';
     const SUPABASE_KEY = 'YOUR_ANON_KEY_HERE';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ─── Toggle screens ─────────────────────────────────────────────────────────
     function toggleScreens(isLoggedIn) {
@@ -193,14 +193,14 @@
     // ─── Handle magic-link callback & clean URL ─────────────────────────────────
     async function handleMagicLink() {
       if (window.location.hash.includes('access_token') || window.location.hash.includes('error')) {
-        const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+        const { error } = await sb.auth.getSessionFromUrl({ storeSession: true });
         if (error) console.error('Magic-link error:', error.message);
         history.replaceState({}, document.title, window.location.pathname);
       }
     }
 
     // ─── On auth changes ────────────────────────────────────────────────────────
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+    sb.auth.onAuthStateChange(async (_event, session) => {
       const loggedIn = !!session;
       toggleScreens(loggedIn);
       if (loggedIn) {
@@ -212,7 +212,7 @@
     // ─── Initial page load ─────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
       await handleMagicLink();
-      const { data: { session } } = await supabase.auth.getSession();
+     const { data: { session } } = await sb.auth.getSession();
       toggleScreens(!!session);
       if (session) {
         await loadProfile();
@@ -430,27 +430,27 @@
         alert('Please enter your work e-mail');
         return;
       }
-      const { error } = await supabase.auth.signInWithOtp({ email });
+     const { error } = await sb.auth.signInWithOtp({ email });
       if (error) alert(error.message);
       else       alert('✅ Check your inbox for the magic link.');
     }
 
     async function logout() {
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
     }
 
     // ─── PROFILE + DASHBOARD ───────────────────────────────────────────────
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await sb.auth.getUser();
       if (!user) return;
-      let { data, error } = await supabase
+      let { data, error } = await sb
         .from('profiles')
         .select('full_name, crew, project')
         .eq('id', user.id)
         .single();
 
       if (error && error.code === 'PGRST116') {
-        await supabase.from('profiles').insert({
+        await sb.from('profiles').insert({
           id: user.id,
           full_name: user.email,
           crew: null,
@@ -480,7 +480,7 @@
 
     // ─── DASHBOARD UI ─────────────────────────────────────────────────────
     async function refreshDashboard() {
-      const { data, error } = await supabase.from('checkins').select('*');
+      const { data, error } = await sb.from('checkins').select('*');
       if (error) return console.error(error);
 
       // totals
@@ -578,7 +578,7 @@
     }
 
     async function submitCheckin() {
-      const { data:{ user } } = await supabase.auth.getUser();
+      const { data:{ user } } = await sb.auth.getUser();
       if (!user) return alert('You must be signed in.');
 
       const payload = {
@@ -597,7 +597,7 @@
         project_comment: document.getElementById('project-comments').value
       };
 
-      const { error } = await supabase.from('checkins').insert(payload);
+      const { error } = await sb.from('checkins').insert(payload);
       if (error) return alert('Error saving check-in:\n' + error.message);
 
       await refreshDashboard();

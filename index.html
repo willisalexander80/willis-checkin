@@ -535,6 +535,28 @@
     </style>
 </head>
 <body>
+    <!-- ░░ LOGIN ░░ -->
+<div id="login-screen" class="screen active">
+  <div class="container">
+    <div class="scale-strip" style="display:flex;gap:8px;margin-bottom:32px">
+      <span class="bar red"></span><span class="bar orange"></span>
+      <span class="bar yellow"></span><span class="bar green"></span>
+    </div>
+
+    <h1>Jobsite Daily Check-in</h1>
+    <p>Sign in with your company e-mail to continue</p>
+
+    <div class="card" style="width:90%;max-width:460px;display:flex;flex-direction:column;gap:24px">
+      <input id="email-input" type="email" placeholder="you@company.com"
+             style="height:56px;padding:0 16px;font-size:18px;border-radius:12px;border:2px solid #ccc"/>
+      <button onclick="sendMagicLink()"
+              style="height:56px;font-size:18px;border-radius:12px;background:#1c90e4;color:#fff;border:none;cursor:pointer">
+        Send magic link
+      </button>
+    </div>
+  </div>
+</div>
+
     <!-- Dashboard Screen -->
     <div id="dashboard-screen" class="screen active">
         <div class="container">
@@ -778,6 +800,39 @@
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Initialize
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // 1️⃣ Parse magic-link callback
+  (async () => {
+    if (window.location.hash.includes('access_token')) {
+      const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      if (error) console.error('Magic-link error:', error.message);
+      history.replaceState({}, document.title, window.location.pathname);
+    }
+  })();
+
+  // 2️⃣ Toggle screens on auth change
+  supabase.auth.onAuthStateChange((_, session) => {
+    const loggedIn = !!session?.user;
+    document.getElementById('login-screen')   .classList.toggle('active', !loggedIn);
+    document.getElementById('dashboard-screen').classList.toggle('active',  loggedIn);
+    if (loggedIn) {
+      loadProfile();
+      refreshDashboard();
+    }
+  });
+
+  // 3️⃣ Send magic link
+  async function sendMagicLink() {
+    const email = document.getElementById('email-input').value.trim();
+    if (!email) return alert('Please enter your work e-mail');
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) return alert(error.message);
+    alert('✅ Check your inbox for the magic link.');
+  }
+</script>
 
 <!-- Initialise Supabase client -->
 <script>
@@ -1003,28 +1058,36 @@ function grabTags(followupId) {
         // Submit check-in
         
 async function submitCheckin() {
-  /* 1️⃣ build a row to insert */
-  const payload = {
-    // team status
-    team_status: dashboardData.todayStatus,                // 'green' | 'yellow' | etc.
-    team_tags:   grabTags('team-followup'),
-    team_comment: document.getElementById('team-comments').value,
+  // get the logged-in user
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return alert('You must be signed in');
 
-    // project metrics
-    prod:    projectScores.prod,
+  const payload = {
+    user_id: user.id,               // ← add this
+    team_status: dashboardData.todayStatus,
+    team_tags: grabTags('team-followup'),
+    team_comment: document.getElementById('team-comments').value,
+    prod: projectScores.prod,
     clarity: projectScores.clarity,
     resolve: projectScores.resolve,
-    safety:  projectScores.safety,
-
-    // follow‑up tags for each metric
-    prod_tags:    grabTags('prod-followup'),
+    safety: projectScores.safety,
+    prod_tags: grabTags('prod-followup'),
     clarity_tags: grabTags('clarity-followup'),
     resolve_tags: grabTags('resolve-followup'),
-    safety_tags:  grabTags('safety-followup'),
-
+    safety_tags: grabTags('safety-followup'),
     project_comment: document.getElementById('project-comments').value
-    // created_at column is filled automatically by Supabase (now())
   };
+
+  const { error } = await supabase.from('checkins').insert(payload);
+  if (error) return alert('Error saving check-in:\n' + error.message);
+
+  await refreshDashboard();
+  showDashboard();
+  resetForm();
+}
+
 
   /* 2️⃣ write to Supabase   */
   const { error } = await db.from('checkins').insert(payload);
